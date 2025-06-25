@@ -1,11 +1,11 @@
 package com.example.material.api
 
-import com.example.material.api.ApiService
-import com.example.material.api.AuthInterceptor
+import com.example.material.datastore.DataStoreManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.runBlocking
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
 import retrofit2.Retrofit
@@ -16,12 +16,18 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://90fb-152-58-182-85.ngrok-free.app"
+    private const val BASE_URL = "https://2ced-152-58-182-85.ngrok-free.app"
 
+    // Provide AuthInterceptor (as Interceptor interface)
     @Provides
     @Singleton
-    fun provideAuthInterceptor(): Interceptor = AuthInterceptor { null }
+    fun provideAuthInterceptor(
+        dataStoreManager: DataStoreManager
+    ): Interceptor = AuthInterceptor {
+        runBlocking { dataStoreManager.getToken() }
+    }
 
+    // Accept Interceptor, not AuthInterceptor specifically
     @Provides
     @Singleton
     fun provideOkHttpClient(interceptor: Interceptor): OkHttpClient {

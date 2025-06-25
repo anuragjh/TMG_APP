@@ -17,7 +17,7 @@ class MainActivity : ComponentActivity() {
 
         val dataStoreManager = DataStoreManager(applicationContext)
 
-        enableEdgeToEdge()
+//        enableEdgeToEdge()
 
         lifecycleScope.launch {
             val token = dataStoreManager.getToken()

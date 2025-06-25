@@ -1,5 +1,7 @@
 package com.example.material.api
 
+import com.example.material.datastore.DataStoreManager
+import com.example.material.pages.admin.User
 import javax.inject.Inject
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -69,6 +71,16 @@ class ApiRepository(private val api: ApiService) {
         }
     }
 
+
+    class UserRepository @Inject constructor(
+        private val apiService: ApiService,
+        private val dataStoreManager: DataStoreManager
+    ) {
+        suspend fun getUsers(role: String): List<User> {
+            val response = apiService.getAllUsers(role)
+            return response.map { User(name = it.name, username = it.username) }
+        }
+    }
 
 
 

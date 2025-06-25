@@ -2,6 +2,11 @@ package com.example.material
 
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -11,10 +16,13 @@ import androidx.navigation.navArgument
 import com.example.material.pages.admin.AdminHomeScreen
 import com.example.material.pages.admin.ClassesCreationScreen
 import com.example.material.pages.admin.ClassesManagmentScreen
+import com.example.material.pages.admin.StudentSelectionScreen
+import com.example.material.pages.admin.TeacherSelectionScreen
 import com.example.material.pages.auth.ForgotPasswordScreen
 import com.example.material.pages.auth.LoginScreen
 import com.example.material.pages.auth.OTPVerifyScreen
 import com.example.material.pages.auth.UpdatePasswordScreen
+import com.example.material.viewmodel.ClassFormViewModel
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -30,6 +38,8 @@ sealed class Screen(val route: String) {
     }
     object ClassManagement : Screen("class_management")
     object ClassCreation : Screen("class_creation")
+    object StudentSelection : Screen("student_selection")
+    object TeacherSelection : Screen("teacher_selection")
 }
 
 fun NavController.navigateAndClearBackStack(destination: String) {
@@ -41,6 +51,10 @@ fun NavController.navigateAndClearBackStack(destination: String) {
     }
 }
 
+@Composable
+inline fun <reified T : ViewModel> sharedViewModel(navBackStackEntry: NavBackStackEntry): T {
+    return hiltViewModel(navBackStackEntry)
+}
 
 
 @Composable
@@ -48,11 +62,10 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
     val navController = rememberNavController()
 
     NavHost(navController = navController, startDestination = startDestination) {
+
         composable(Screen.Login.route) {
             LoginScreen(
-                onForgotPassword = {
-                    navController.navigate(Screen.ForgotPassword.route)
-                },
+                onForgotPassword = { navController.navigate(Screen.ForgotPassword.route) },
                 onLoginSuccess = { token, role ->
                     when (role) {
                         "STUDENT" -> navController.navigateAndClearBackStack(Screen.StudentHome.route)
@@ -67,7 +80,6 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
             ForgotPasswordScreen(navController = navController)
         }
 
-
         composable(Screen.StudentHome.route) {
             Text("Student Home Screen")
         }
@@ -77,10 +89,13 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
         }
 
         composable(Screen.AdminHome.route) {
-            AdminHomeScreen(onNavigateToClass = {
-                navController.navigate(Screen.ClassManagement.route)
-            },)
+            AdminHomeScreen(
+                onNavigateToClass = {
+                    navController.navigate(Screen.ClassManagement.route)
+                }
+            )
         }
+
         composable(
             route = Screen.OtpVerify.route,
             arguments = listOf(navArgument("email") { type = NavType.StringType })
@@ -97,7 +112,6 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
             UpdatePasswordScreen(key = key, navController = navController)
         }
 
-
         composable(Screen.ClassManagement.route) {
             ClassesManagmentScreen(
                 onCreateClass = { navController.navigate(Screen.ClassCreation.route) },
@@ -106,12 +120,41 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
         }
 
         composable(Screen.ClassCreation.route) {
+            val formViewModel = hiltViewModel<ClassFormViewModel>()
             ClassesCreationScreen(
-                onBack = { navController.popBackStack() }
+                formViewModel = formViewModel,
+                onStudentTap = { navController.navigate(Screen.StudentSelection.route) },
+                onTeacherTap = { navController.navigate(Screen.TeacherSelection.route) },
+                onBack = { navController.popBackStack() },
+                onClassCreated = {
+                    navController.navigateAndClearBackStack(Screen.AdminHome.route)
+                }
             )
         }
 
 
+        composable(Screen.StudentSelection.route) { entry ->
+            val parentEntry = remember(navController) {
+                navController.getBackStackEntry(Screen.ClassCreation.route)
+            }
+            val formViewModel = sharedViewModel<ClassFormViewModel>(parentEntry)
+            StudentSelectionScreen(
+                onBack = { navController.popBackStack() },
+                onUpdate = { navController.popBackStack() },
+                formViewModel = formViewModel
+            )
+        }
 
+        composable(Screen.TeacherSelection.route) { entry ->
+            val parentEntry = remember(navController) {
+                navController.getBackStackEntry(Screen.ClassCreation.route)
+            }
+            val formViewModel = sharedViewModel<ClassFormViewModel>(parentEntry)
+            TeacherSelectionScreen(
+                onBack = { navController.popBackStack() },
+                onUpdate = { navController.popBackStack() },
+                formViewModel = formViewModel
+            )
+        }
     }
 }
