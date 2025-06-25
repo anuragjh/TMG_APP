@@ -8,10 +8,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.material.pages.ForgotPasswordScreen
-import com.example.material.pages.LoginScreen
-import com.example.material.pages.OTPVerifyScreen
-import com.example.material.pages.UpdatePasswordScreen
+import com.example.material.pages.admin.AdminHomeScreen
+import com.example.material.pages.admin.ClassesCreationScreen
+import com.example.material.pages.admin.ClassesManagmentScreen
+import com.example.material.pages.auth.ForgotPasswordScreen
+import com.example.material.pages.auth.LoginScreen
+import com.example.material.pages.auth.OTPVerifyScreen
+import com.example.material.pages.auth.UpdatePasswordScreen
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
@@ -25,6 +28,8 @@ sealed class Screen(val route: String) {
     object ChangePassword : Screen("change_password/{key}") {
         fun createRoute(key: String) = "change_password/$key"
     }
+    object ClassManagement : Screen("class_management")
+    object ClassCreation : Screen("class_creation")
 }
 
 fun NavController.navigateAndClearBackStack(destination: String) {
@@ -72,7 +77,9 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
         }
 
         composable(Screen.AdminHome.route) {
-            Text("Admin Home Screen")
+            AdminHomeScreen(onNavigateToClass = {
+                navController.navigate(Screen.ClassManagement.route)
+            },)
         }
         composable(
             route = Screen.OtpVerify.route,
@@ -82,10 +89,29 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
             OTPVerifyScreen(email = email, navController = navController)
         }
 
+        composable(
+            route = Screen.ChangePassword.route,
+            arguments = listOf(navArgument("key") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val key = backStackEntry.arguments?.getString("key") ?: ""
+            UpdatePasswordScreen(key = key, navController = navController)
+        }
+
+
+        composable(Screen.ClassManagement.route) {
+            ClassesManagmentScreen(
+                onCreateClass = { navController.navigate(Screen.ClassCreation.route) },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(Screen.ClassCreation.route) {
+            ClassesCreationScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+
 
     }
-
-
-
-
 }

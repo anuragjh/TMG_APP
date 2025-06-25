@@ -1,5 +1,9 @@
 package com.example.material.api
 
+import javax.inject.Inject
+import okhttp3.ResponseBody
+import retrofit2.Response
+
 
 class ApiRepository(private val api: ApiService) {
 
@@ -31,7 +35,7 @@ class ApiRepository(private val api: ApiService) {
         }
     }
 
-    class OTPRepository(private val api: ApiService) {
+    class OTPRepository  @Inject constructor(private val api: ApiService) {
         suspend fun verifyOtp(email: String, otp: String): Result<String> {
             return try {
                 val response = api.verifyOtp(email, otp)
@@ -40,6 +44,24 @@ class ApiRepository(private val api: ApiService) {
                     Result.success(key)
                 } else {
                     Result.failure(Exception("Invalid OTP"))
+                }
+            } catch (e: Exception) {
+                Result.failure(e)
+            }
+        }
+    }
+
+
+    class PasswordRepository @Inject constructor(
+        private val api: ApiService
+    ) {
+        suspend fun updatePassword(key: String, newPassword: String): Result<String> {
+            return try {
+                val response: Response<ResponseBody> = api.updatePassword(UpdatePasswordRequest(key, newPassword))
+                if (response.isSuccessful) {
+                    Result.success(response.body()?.string() ?: "Password updated successfully.")
+                } else {
+                    Result.failure(Exception("Failed to update password"))
                 }
             } catch (e: Exception) {
                 Result.failure(e)

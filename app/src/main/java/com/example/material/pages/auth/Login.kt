@@ -1,5 +1,6 @@
-package com.example.material.pages
+package com.example.material.pages.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -181,6 +182,8 @@ fun LoginScreen(
 
             // Save to datastore
             dataStore.saveAuth(success.token, success.role)
+
+            Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT).show()
 
             // Navigate based on role
             onLoginSuccess(success.token, success.role)

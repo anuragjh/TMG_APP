@@ -1,5 +1,6 @@
-package com.example.material.pages
+package com.example.material.pages.auth
 
+import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.text.KeyboardOptions
@@ -11,33 +12,48 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
 import com.example.material.R
-import com.example.material.ui.theme.TMGTheme
+import com.example.material.Screen
+import com.example.material.viewmodel.UpdatePasswordViewModel
 
 @Composable
-fun UpdatePasswordScreen(key: String) {
+fun UpdatePasswordScreen(
+    key: String,
+    navController: NavController,
+    viewModel: UpdatePasswordViewModel = hiltViewModel()
+) {
     var newPassword by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var repeatVisible by remember { mutableStateOf(false) }
-    var showError by remember { mutableStateOf(false) }
+    var showValidationError by remember { mutableStateOf(false) }
 
     val focusManager = LocalFocusManager.current
+    val context = LocalContext.current
+    val state by viewModel.state.collectAsState()
 
     fun isPasswordValid(password: String): Boolean {
         return password.length >= 8 && password.any { !it.isLetterOrDigit() }
     }
 
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
-    ) {
+    LaunchedEffect(state) {
+        if (state is UpdatePasswordViewModel.UiState.Success) {
+            Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+            navController.navigate(Screen.Login.route) {
+                popUpTo(Screen.Login.route) { inclusive = true }
+            }
+        }
+    }
+
+    Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -50,6 +66,7 @@ fun UpdatePasswordScreen(key: String) {
                 style = MaterialTheme.typography.headlineSmall,
                 color = MaterialTheme.colorScheme.onBackground
             )
+
             Spacer(Modifier.height(24.dp))
 
             Image(
@@ -61,9 +78,6 @@ fun UpdatePasswordScreen(key: String) {
                     .padding(bottom = 32.dp)
             )
 
-
-
-            // New Password Field
             OutlinedTextField(
                 value = newPassword,
                 onValueChange = { newPassword = it },
@@ -84,7 +98,6 @@ fun UpdatePasswordScreen(key: String) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Repeat Password Field
             OutlinedTextField(
                 value = repeatPassword,
                 onValueChange = { repeatPassword = it },
@@ -105,44 +118,52 @@ fun UpdatePasswordScreen(key: String) {
 
             Spacer(Modifier.height(12.dp))
 
-            // Error message
-            if (showError) {
+            if (showValidationError) {
                 Text(
-                    text = "Password must be at least 8 characters and include 1 special character.",
+                    text = "Password must be at least 8 characters and include 1 special character, and both must match.",
                     color = MaterialTheme.colorScheme.error,
                     style = MaterialTheme.typography.bodySmall,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp)
+                    modifier = Modifier.fillMaxWidth()
                 )
-            } else {
-                Spacer(Modifier.height(8.dp))
             }
 
-            // Update Button
+            if (state is UpdatePasswordViewModel.UiState.Error) {
+                Text(
+                    text = (state as UpdatePasswordViewModel.UiState.Error).message,
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier
+                        .padding(top = 4.dp)
+                        .fillMaxWidth(),
+                    textAlign = TextAlign.Center
+                )
+            }
+
+            if (state is UpdatePasswordViewModel.UiState.Loading) {
+                CircularProgressIndicator(modifier = Modifier.padding(vertical = 16.dp))
+            } else {
+                Spacer(Modifier.height(16.dp))
+            }
+
             FilledTonalButton(
                 onClick = {
-                    showError = !isPasswordValid(newPassword) || newPassword != repeatPassword
-                    if (!showError) {
-                        // TODO: Call API or navigate
-                        println("Password updated: $newPassword")
+                    showValidationError = !isPasswordValid(newPassword) || newPassword != repeatPassword
+                    if (!showValidationError) {
                         focusManager.clearFocus()
+                        viewModel.updatePassword(key, newPassword)
                     }
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = MaterialTheme.shapes.large
+                    .height(56.dp)
             ) {
-                Text(
-                    text = "Update Password",
-                    style = MaterialTheme.typography.labelLarge
-                )
+                Text("Update Password")
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
+
 

@@ -12,6 +12,15 @@ data class LoginResponse(
     val role: String?
 )
 
+data class UpdatePasswordRequest(
+    val key: String,
+    val password: String
+)
+
+//data class VerifyOTPResponse(
+//    val key : String?
+//)
+
 interface ApiService {
 
     @POST("/api/auth/login")
@@ -27,6 +36,12 @@ interface ApiService {
         @Query("email") email: String,
         @Query("otp") otp: String
     ): Response<Map<String, String>>
+
+    // ApiService.kt
+    @POST("api/auth/new-password")
+    suspend fun updatePassword(
+        @Body request: UpdatePasswordRequest
+    ): Response<ResponseBody>
 
 
 }

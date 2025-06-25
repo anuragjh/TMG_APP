@@ -1,4 +1,4 @@
-package com.example.material.pages
+package com.example.material.pages.auth
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -11,18 +11,15 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.navigation.NavController
 import com.example.material.R
 import com.example.material.Screen
 import com.example.material.ui.theme.SecondaryColor
-import com.example.material.ui.theme.TMGTheme
 import com.example.material.viewmodel.ForgotPasswordState
 import com.example.material.viewmodel.ForgotPasswordViewModel
 
