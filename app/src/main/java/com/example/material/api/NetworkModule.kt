@@ -16,9 +16,8 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
 
-    private const val BASE_URL = "https://2ced-152-58-182-85.ngrok-free.app"
+    private const val BASE_URL = "http://140.245.28.59:8080"
 
-    // Provide AuthInterceptor (as Interceptor interface)
     @Provides
     @Singleton
     fun provideAuthInterceptor(
@@ -27,7 +26,6 @@ object NetworkModule {
         runBlocking { dataStoreManager.getToken() }
     }
 
-    // Accept Interceptor, not AuthInterceptor specifically
     @Provides
     @Singleton
     fun provideOkHttpClient(interceptor: Interceptor): OkHttpClient {
