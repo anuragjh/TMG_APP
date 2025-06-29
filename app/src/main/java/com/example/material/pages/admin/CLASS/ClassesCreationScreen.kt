@@ -1,4 +1,4 @@
-package com.example.material.pages.admin
+package com.example.material.pages.admin.CLASS
 
 import android.widget.Toast
 import androidx.compose.foundation.layout.*
@@ -24,7 +24,7 @@ fun ClassesCreationScreen(
     onStudentTap: () -> Unit = {},
     onTeacherTap: () -> Unit = {},
     formViewModel: ClassFormViewModel = hiltViewModel(),
-    onClassCreated: () -> Unit = {} // 🎯 Callback to navigate
+    onClassCreated: () -> Unit = {}
 ) {
     var className by remember { mutableStateOf("") }
     var classFee by remember { mutableStateOf("") }

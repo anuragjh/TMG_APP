@@ -1,7 +1,7 @@
 package com.example.material.api
 
 import com.example.material.datastore.DataStoreManager
-import com.example.material.pages.admin.User
+import com.example.material.pages.admin.CLASS.User
 import javax.inject.Inject
 import okhttp3.ResponseBody
 import retrofit2.Response

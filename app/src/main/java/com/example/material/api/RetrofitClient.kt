@@ -7,6 +7,7 @@ import retrofit2.converter.gson.GsonConverterFactory
 object RetrofitClient {
 
     private const val BASE_URL = "http://140.245.28.59:8080"
+//    private const val BASE_URL = "https://a44c-152-58-182-148.ngrok-free.app"
 
     private var tokenProvider: () -> String? = { null }
 

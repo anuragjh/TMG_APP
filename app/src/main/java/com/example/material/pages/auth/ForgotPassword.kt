@@ -18,7 +18,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.material.R
-import com.example.material.Screen
 import com.example.material.ui.theme.SecondaryColor
 import com.example.material.viewmodel.ForgotPasswordState
 import com.example.material.viewmodel.ForgotPasswordViewModel

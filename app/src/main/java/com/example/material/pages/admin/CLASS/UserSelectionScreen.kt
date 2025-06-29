@@ -1,4 +1,4 @@
-package com.example.material.pages.admin
+package com.example.material.pages.admin.CLASS
 
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons

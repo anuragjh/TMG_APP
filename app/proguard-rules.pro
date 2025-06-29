@@ -1,21 +1,65 @@
-# Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# --- General Kotlin metadata ---
+-keepattributes *Annotation*
+-keepattributes Signature
+-keep class kotlin.** { *; }
+-keepclassmembers class kotlin.Metadata { *; }
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# --- Jetpack Compose (UI and animation) ---
+-keep class androidx.compose.** { *; }
+-keepclassmembers class androidx.compose.** { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# For Material3
+-keep class androidx.compose.material3.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# --- Retrofit (models & API interfaces) ---
+-keep class retrofit2.** { *; }
+-keep interface retrofit2.** { *; }
+-keepattributes Signature
+-keepattributes Exceptions
+-keep class com.example.material.api.** { *; }
+
+# GSON (needed for Retrofit + Gson converter)
+-keep class com.google.gson.** { *; }
+-keep class com.example.material.model.** { *; }
+
+# Retrofit callbacks & converters
+-dontwarn okhttp3.**
+-dontwarn retrofit2.converter.gson.**
+-keepclassmembers class * {
+    @retrofit2.http.* <methods>;
+}
+
+# --- Hilt / Dagger ---
+-dontwarn dagger.hilt.internal.**
+-keep class dagger.hilt.** { *; }
+-keep interface dagger.hilt.** { *; }
+
+# Needed for generated Hilt classes
+-keep class * extends dagger.hilt.android.internal.lifecycle.HiltViewModelFactory { *; }
+-keep class androidx.hilt.** { *; }
+
+# ViewModels and Hilt-injected constructors
+-keep class * extends androidx.lifecycle.ViewModel
+-keep class * {
+    @dagger.hilt.android.lifecycle.HiltViewModel *;
+}
+
+# --- Navigation Compose ---
+-keep class androidx.navigation.** { *; }
+-keepclassmembers class * {
+    @androidx.navigation.* <methods>;
+}
+
+# --- DataStore ---
+-keep class androidx.datastore.** { *; }
+-keepclassmembers class androidx.datastore.** { *; }
+
+# --- Accompanist ---
+-keep class com.google.accompanist.** { *; }
+
+# --- Optional: Suppress Compose previews from obfuscation ---
+-keep class **_PreviewKt { *; }
+
+# --- Logging (optional, for OkHttp) ---
+-dontwarn okio.**
+-dontwarn javax.annotation.**

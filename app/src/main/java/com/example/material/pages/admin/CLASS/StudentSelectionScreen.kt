@@ -1,4 +1,4 @@
-package com.example.material.pages.admin
+package com.example.material.pages.admin.CLASS
 
 import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel

@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.example.material.R
-import com.example.material.Screen
+//import com.example.material.Screen
 import com.example.material.viewmodel.OTPViewModel
 
 @Composable
