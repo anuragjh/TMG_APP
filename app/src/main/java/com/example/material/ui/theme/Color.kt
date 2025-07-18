@@ -2,7 +2,6 @@ package com.example.material.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Light mode colors
 val PrimaryColor = Color(0xff4382ec)
 val PrimaryLightColor = Color(0xFFbbd6fd)
 val SecondaryColor = Color(0xFF3569b2)
@@ -14,7 +13,7 @@ val OnBackground = Color(0xFF1b3041)
 val OnSurface = Color(0xFF1b3041)
 
 // Dark mode colors
-val BackgroundDark = Color(0xFF0b0f14)
+val BackgroundDark = Color(0xFF21262C)
 val SurfaceDark = Color(0xFF121212)
 val OnDark = Color(0xFFe2eeff)
 

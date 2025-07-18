@@ -63,3 +63,72 @@
 # --- Logging (optional, for OkHttp) ---
 -dontwarn okio.**
 -dontwarn javax.annotation.**
+# --- Fix potential Retrofit + GSON model stripping ---
+-keepclassmembers class com.example.material.api.** {
+    <fields>;
+    public <init>();
+}
+
+# --- Keep Retrofit service interfaces fully intact ---
+-keep interface com.example.material.api.** { *; }
+
+# --- Keep Hilt ViewModels and constructors ---
+-keep class com.example.material.viewmodel.** { *; }
+-keepclassmembers class com.example.material.viewmodel.** {
+    <init>(...);
+}
+# --- Firebase Cloud Messaging (FCM) ---
+-keep class com.google.firebase.messaging.** { *; }
+-keep class com.google.firebase.iid.** { *; }  # older fallback for some devices
+-keep class com.google.firebase.installations.** { *; }
+-keep class com.google.android.gms.tasks.** { *; }
+-keep class com.google.android.gms.common.** { *; }
+-keep class com.google.android.gms.base.** { *; }
+
+# --- Firebase Core Services ---
+-keep class com.google.firebase.components.** { *; }
+-keep class com.google.firebase.provider.** { *; }
+-keep class com.google.firebase.** { *; }
+-keep class com.google.android.datatransport.** { *; }
+-keep class com.google.dagger.** { *; }
+
+# --- Avoid removing Firebase Init & Auto startup ---
+-keep class com.google.firebase.FirebaseApp { *; }
+-keep class com.google.firebase.platforminfo.** { *; }
+-keep class com.google.firebase.heartbeatinfo.** { *; }
+
+# --- Prevent stripping FCM service declarations ---
+-keep class com.google.firebase.messaging.FirebaseMessagingService { *; }
+
+# --- Prevent logging & analytics stripping ---
+-dontwarn com.google.firebase.messaging.**
+-dontwarn com.google.firebase.installations.**
+-dontwarn com.google.firebase.iid.**
+-dontwarn com.google.android.datatransport.**
+
+-keep class com.example.material.DeviceTokenRequest { *; }
+
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+# -- keep the Importance enum and its constant names -----------------
+-keepnames enum com.example.material.pages.commons.Importance
+-keepclassmembers enum com.example.material.pages.commons.Importance { *; }
+
+# Please add these rules to your existing keep rules in order to suppress warnings.
+# This is generated automatically by the Android Gradle plugin.
+-dontwarn org.slf4j.impl.StaticLoggerBinder
+-dontwarn org.slf4j.impl.StaticMDCBinder
+-dontwarn org.slf4j.impl.StaticMarkerBinder
+
+# Keep your ChatMessage class with all fields
+-keep class com.example.material.pages.commons.ChatMessage { *; }
+
+# Keep all model classes if you deserialize manually
+-keepclassmembers class * {
+    <init>(...);
+}
+
+# Optional: if you use JSONObject a lot
+-keepnames class org.json.** { *; }

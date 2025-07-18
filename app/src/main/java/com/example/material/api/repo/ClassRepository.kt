@@ -7,6 +7,7 @@ import com.example.material.api.ClassDetails
 import com.example.material.api.ClassNameResponse
 import com.example.material.api.NonUserResponse
 import com.example.material.api.RetrofitClient
+import com.example.material.api.UserProfile
 import okhttp3.ResponseBody
 import retrofit2.Response
 import javax.inject.Inject
@@ -80,6 +81,13 @@ class ClassRepositoryForDetails @Inject constructor(private val apiService: ApiS
     suspend fun deleteClass(className: String): Boolean {
         val response = apiService.deleteClass(className)
         return response.isSuccessful
+    }
+}
+class UserRepositoryDetailedjwt @Inject constructor(
+    private val apiService: ApiService
+) {
+    suspend fun getUserProfile(): Response<UserProfile> {
+        return apiService.getUserProfilejwt()
     }
 }
 

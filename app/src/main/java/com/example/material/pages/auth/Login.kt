@@ -1,5 +1,6 @@
 package com.example.material.pages.auth
 
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -26,6 +27,8 @@ import com.example.material.datastore.DataStoreManager
 import com.example.material.ui.theme.TMGTheme
 import com.example.material.viewmodel.AuthViewModel
 import com.example.material.viewmodel.LoginState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun LoginScreen(
@@ -173,36 +176,38 @@ fun LoginScreen(
         }
     }
 
-    val context = LocalContext.current
-    val dataStore = remember { DataStoreManager(context) }
 
+
+    /* -------- context & datastore -------- */
+    val ctx       = LocalContext.current
+    val dataStore = remember { DataStoreManager(ctx) }
+
+    /* -------- react exactly when loginState changes -------- */
     LaunchedEffect(loginState) {
         if (loginState is LoginState.Success) {
-            val success = loginState as LoginState.Success
+            val s = loginState as LoginState.Success
 
-            // Save to datastore
-            dataStore.saveAuth(success.token, success.role)
+            /* 1️⃣ upload FCM token first */
+            val uploaded = viewModel.uploadFcmToken(s.token)
+            if (!uploaded) {
+                Toast.makeText(ctx, "Couldn't register push‑token", Toast.LENGTH_LONG).show()
+            }
 
-            Toast.makeText(context, "Login Successful", Toast.LENGTH_SHORT).show()
+            /* 2️⃣ save credentials + navigate (wrapped for safety) */
+            runCatching {
+                dataStore.saveAuth(s.token, s.role)
 
-            // Navigate based on role
-            onLoginSuccess(success.token, success.role)
+                onLoginSuccess(s.token, s.role)
+            }.onFailure {
+                Toast.makeText(ctx, it.localizedMessage ?: "Unknown error", Toast.LENGTH_LONG).show()
+            }
 
-            // Reset state so this doesn’t repeat
+            /* 3️⃣ reset VM so this block won't re‑fire on recomposition */
             viewModel.resetState()
         }
     }
 
-}
 
-@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun LoginScreenPreview() {
-    TMGTheme {
-        LoginScreen(
-            onForgotPassword = { /* do nothing for preview */ },
-            onLoginSuccess = { _, _ -> /* do nothing for preview */ }
-        )
-    }
+
 }
 

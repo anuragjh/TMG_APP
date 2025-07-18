@@ -248,8 +248,3 @@ fun generatePassword(): String {
     return (1..8).map { chars.random() }.joinToString("")
 }
 
-@Preview(showBackground = true)
-@Composable
-fun CreateUserScreenPreview() {
-    CreateUserScreen()
-}

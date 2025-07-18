@@ -10,6 +10,7 @@ import com.example.material.api.UserProfile
 import com.example.material.api.UserProfileUpdateRequest
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.Response
 import javax.inject.Inject
 import okhttp3.ResponseBody
 
@@ -70,5 +71,4 @@ class UserRepository @Inject constructor(
             Result.failure(e)
         }
     }
-
 }

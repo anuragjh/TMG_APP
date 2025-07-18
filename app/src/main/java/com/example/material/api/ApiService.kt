@@ -1,5 +1,11 @@
 package com.example.material.api
 
+
+import com.example.material.pages.commons.ChatMessage
+import com.example.material.pages.commons.Importance
+import com.example.material.pages.teacher.NoteItem
+import okhttp3.MultipartBody
+import okhttp3.RequestBody
 import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.Response
@@ -7,14 +13,17 @@ import okhttp3.ResponseBody
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.HTTP
+import retrofit2.http.Multipart
 import retrofit2.http.PUT
+import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
 
 data class LoginRequest(val username: String, val password: String)
 data class LoginResponse(
     val jwt: String?,
-    val role: String?
+    val role: String?,
+    val username: String?,
 )
 
 data class UpdatePasswordRequest(
@@ -100,6 +109,101 @@ data class UserProfileUpdateRequest(
     val gmail: String,
     val phone: String
 )
+data class AttendanceSummary(
+    val attendanceId: String,
+    val className: String,
+    val teacherUsername: String,
+    val date: TimestampData
+)
+
+data class TimestampData(val seconds: Long, val nanos: Int)
+
+data class AttendanceDetail(
+    val attendanceId: String,
+    val className: String,
+    val teacherUsername: String,
+    val topicCovered: String,
+    val present: List<String>,
+    val absent: List<String>,
+    val date: TimestampData,
+    val startTime: String,
+    val endTime: String
+)
+
+//teacher home
+data class OngoingClass(
+    val teacherUsername: String,
+    val stage: String,
+    val className: String
+)
+data class Student(
+    val username: String,
+    val name: String
+)
+data class AttendanceRequest(
+    val present: List<String>,
+    val absent: List<String>
+)
+
+data class EndClassRequest(
+    val topicCovered: String
+)
+
+// api/model/ClassResponse.kt
+data class ClassResponse(
+    val className: String,
+    val students: List<String>      // not used yet
+)
+data class FileMeta(
+    val name: String,
+    val className: String,
+    val students: List<String>
+)
+
+data class NoticeDto(
+    val role       : String,
+    val body       : String,
+    val topic      : String,
+    val importance : Importance,
+    val date       : TimestampDto
+)
+data class NoticeRequest(
+    val role: String,        // "STUDENT" | "TEACHER"
+    val topic: String,
+    val body: String,
+    val importance: String   // "NORMAL" | "MEDIUM" | "HIGH"
+)
+data class TimestampDto(val seconds: Long, val nanos: Int)
+
+
+
+data class ChatRoomResponse(
+    val className: String,
+    val canEveryoneMessage: Boolean,
+    val lastMessage: LastMessage?,
+    val username: String? = null
+)
+
+data class LastMessage(
+    val id: String,
+    val className: String,
+    val senderUsername: String,
+    val message: String,
+    val timestamp: String
+)
+data class UpdateResponse(
+    val updateRequired: Boolean,
+    val data: UpdateData?
+)
+
+data class UpdateData(
+    val id: String,
+    val version: String,
+    val apkUrl: String,
+    val releaseMonth: String,
+    val size: String,
+    val description: String
+)
 
 
 interface ApiService {
@@ -177,4 +281,62 @@ interface ApiService {
     @HTTP(method = "DELETE", path = "api/user-profile/{username}", hasBody = false)
     suspend fun deleteUser(@Path("username") username: String): Response<ResponseBody>
 
+    //attendance
+    @GET("/api/attendance-summary")
+    suspend fun getAttendanceSummary(): List<AttendanceSummary>
+    @GET("/api/attendance/{attendanceId}")
+    suspend fun getAttendanceDetail(@Path("attendanceId") attendanceId: String): AttendanceDetail
+    //teacher home
+    @GET("/api/ongoing-classes")
+    suspend fun getOngoingClasses(): List<OngoingClass>
+    @GET("/api/my-classes")
+    suspend fun getMyClasses(): List<String>
+    @POST("/api/start-class")
+    suspend fun startClass(@Query("className") className: String): ResponseBody
+    @GET("/api/valid-students")
+    suspend fun getValidStudents(@Query("attendanceDocId") classId: String): List<Student>
+    @PUT("api/giveAttendance")
+    suspend fun giveAttendance(
+        @Query("classDocId") id: String,
+        @Body request: AttendanceRequest
+    ): ResponseBody
+    @PUT("/api/endClass")
+    suspend fun putEndClass(
+        @Query("classDocId") classId: String,
+        @Body request: EndClassRequest
+    ): ResponseBody
+
+    @GET("api/user-profile-jwt")
+    suspend fun getUserProfilejwt(): Response<UserProfile>
+    @GET("api/files")
+    suspend fun getNotes(): Response<List<NoteItem>>
+    @GET("/api/all-classes-student")
+    suspend fun getAllClasses(): List<ClassResponse>
+
+    @Multipart
+    @POST("/api/files")
+    suspend fun uploadNote(
+        @Part file: MultipartBody.Part,
+        @Part("meta") meta: RequestBody
+    ): ResponseBody
+    @HTTP(method = "DELETE", path = "/api/files", hasBody = true)
+    suspend fun deleteNotes(@Body names: List<String>): retrofit2.Response<okhttp3.ResponseBody>
+
+    @GET("/api/notice")
+    suspend fun getNotices(): Response<List<NoticeDto>>
+    @POST("/api/notice")
+    suspend fun postNotice(
+        @Body req: NoticeRequest      // ← your DTO
+    ): Response<ResponseBody>
+
+    @GET("api/chatroom/mychatrooms")
+    suspend fun getMyChatRooms(): List<ChatRoomResponse>
+
+    @GET("api/chat/{className}/history")
+    suspend fun getMessages(@Path("className") className: String): List<ChatMessage>
+    @GET("api/myUsername")
+    suspend fun getMyUsername(): Response<ResponseBody>
+    @GET("api/update/check")
+    suspend fun checkUpdate(@Query("version") version: String): UpdateResponse
 }
+

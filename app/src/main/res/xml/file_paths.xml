@@ -1,0 +1,11 @@
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Internal app cache dir: /data/data/<package>/cache/notes/ -->
+    <cache-path
+        name="notes_cache"
+        path="notes/" />
+
+    <!-- External files dir: /storage/emulated/0/Android/data/<package>/files/Download/ -->
+    <external-files-path
+        name="download"
+        path="Download/" />
+</paths>

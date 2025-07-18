@@ -1,3 +1,6 @@
+import android.net.Uri
+import android.widget.Toast
+import androidx.activity.ComponentActivity
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
@@ -6,9 +9,13 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavType
@@ -16,6 +23,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.example.material.BuildConfig
+import com.example.material.datastore.DataStoreManager
+import com.example.material.pages.admin.ATTENDANCE.AttendanceDetailScreen
+import com.example.material.pages.admin.ATTENDANCE.AttendanceDetailScreenWrapper
+import com.example.material.pages.admin.ATTENDANCE.AttendanceScreen
 import com.example.material.pages.admin.CLASS.AddUsersScreen
 import com.example.material.pages.admin.AdminHomeScreen
 import com.example.material.pages.admin.CLASS.ClassDetailsScreen
@@ -30,21 +42,44 @@ import com.example.material.pages.admin.USERS.CreateUserScreen
 import com.example.material.pages.admin.USERS.UserDetailsScreen
 import com.example.material.pages.admin.USERS.UserUpdationScreen
 import com.example.material.pages.admin.USERS.UsersManagmentScreen
+import com.example.material.pages.admin.notice.CreateNoticeRoute
 import com.example.material.pages.auth.ForgotPasswordScreen
 import com.example.material.pages.auth.LoginScreen
 import com.example.material.pages.auth.OTPVerifyScreen
 import com.example.material.pages.auth.UpdatePasswordScreen
+import com.example.material.pages.commons.ProfileScreen
+import com.example.material.pages.commons.SecurityScreen
+import com.example.material.pages.commons.SettingsScreen
+import com.example.material.pages.commons.StaticTextScreen
+import com.example.material.pages.commons.TMGUpdateScreen
+import com.example.material.pages.students.StuDest
+import com.example.material.pages.students.StudentHomeScreen
+import com.example.material.pages.teacher.Destination
+import com.example.material.pages.teacher.TeacherHomeScreen
+import com.example.material.viewmodel.AppViewModel
 import com.example.material.viewmodel.ClassFormViewModel
+import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object ForgotPassword : Screen("forgot_password")
     object StudentHome : Screen("student_home")
     object TeacherHome : Screen("teacher_home")
+    object CreateNotice : Screen("create_notice")
     object AdminHome : Screen("admin_home")
     object OtpVerify : Screen("otp_verify/{email}") {
         fun createRoute(email: String) = "otp_verify/$email"
     }
+    object SETTINGS : Screen("settings")
+    data object static_pages : Screen("static_pages/{heading}/{content}") {
+        fun createRoute(heading: String, content: String): String {
+            return "static_pages/${Uri.encode(heading)}/${Uri.encode(content)}"
+        }
+    }
+    data object security : Screen("security")
+
+    data object update : Screen("update")
+    data object profile : Screen("profile")
     object ChangePassword : Screen("change_password/{key}") {
         fun createRoute(key: String) = "change_password/$key"
     }
@@ -55,6 +90,12 @@ sealed class Screen(val route: String) {
     object UserDetails : Screen("user_details/{username}") {
         fun createRoute(username: String) = "user_details/$username"
     }
+    //attendance
+    object AttendanceManagement : Screen("attendance_management")
+    object AttendanceDetails : Screen("attendance_details/{id}") {
+        fun createRoute(id: String) = "attendance_details/$id"
+    }
+    //class
     object ClassCreation : Screen("class_creation")
     object StudentSelection : Screen("student_selection")
     object TeacherSelection : Screen("teacher_selection")
@@ -90,6 +131,19 @@ inline fun <reified T : ViewModel> sharedViewModel(navBackStackEntry: NavBackSta
 @Composable
 fun AppNavGraph(startDestination: String = Screen.Login.route) {
     val navController = rememberNavController()
+    val appViewModel: AppViewModel = hiltViewModel()
+
+    val isLoggedOut = appViewModel.isLoggedOut.value
+
+    LaunchedEffect(isLoggedOut) {
+        if (isLoggedOut) {
+            navController.navigate(Screen.Login.route) {
+                popUpTo(0) { inclusive = true }
+            }
+            appViewModel.resetLogout()
+        }
+    }
+
 
     NavHost(
         navController = navController,
@@ -130,13 +184,14 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
 
         composable(
             Screen.StudentHome.route,
-            enterTransition = { defaultEnterTransition() },
-            exitTransition = { defaultExitTransition() },
+            enterTransition  = { defaultEnterTransition() },
+            exitTransition   = { defaultExitTransition() },
             popEnterTransition = { defaultPopEnterTransition() },
-            popExitTransition = { defaultPopExitTransition() }
+            popExitTransition  = { defaultPopExitTransition() }
         ) {
-            Text("Student Home Screen")
+            StudentHomeScreen()
         }
+
 
         composable(
             Screen.TeacherHome.route,
@@ -145,8 +200,10 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
             popEnterTransition = { defaultPopEnterTransition() },
             popExitTransition = { defaultPopExitTransition() }
         ) {
-            Text("Teacher Home Screen")
+            TeacherHomeScreen()
+
         }
+
 
         composable(
             Screen.AdminHome.route,
@@ -162,6 +219,73 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
                 onNavigateToUser = {
                     navController.navigate(Screen.UserManagement.route)
                 },
+                onNavigateToAttendance = {
+                    navController.navigate(Screen.AttendanceManagement.route)
+                },
+               onNavigateToNotice = {
+                   navController.navigate(Screen.CreateNotice.route)
+               },
+                onSettingClick = {
+                   navController.navigate(Screen.SETTINGS.route)
+                }
+            )
+        }
+        composable(Screen.SETTINGS.route) {
+
+            SettingsScreen(
+                onNavigateToStaticPage = { heading, content ->
+                    navController.navigate(Screen.static_pages.createRoute(heading, content))
+                },
+                onMyAccClick = {  navController.navigate(Screen.profile.route) },
+                onUpdateClick = { navController.navigate(Screen.update.route) },
+                onSecurityClick = { navController.navigate(Screen.security.route) },
+            )
+        }
+        composable(Screen.security.route) {
+            SecurityScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.update.route) {
+            TMGUpdateScreen(
+                version = BuildConfig.VERSION_NAME,
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(Screen.profile.route) {
+            val context = LocalContext.current
+            val coroutineScope = rememberCoroutineScope()
+            val appViewModel: AppViewModel = hiltViewModel()
+            ProfileScreen(
+                onBack = { navController.popBackStack() },
+                onLogoutClick = {
+                    coroutineScope.launch {
+                        DataStoreManager(context).clearAuth()
+                        appViewModel.logout()
+                        Toast.makeText(
+                            context,
+                            "RERUN APP CLOSE-OPEN APP ONCE TO LOGIN",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                }
+            )
+        }
+        composable(
+            route = Screen.static_pages.route,
+            arguments = listOf(
+                navArgument("heading") { type = NavType.StringType },
+                navArgument("content") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+
+            val heading = backStackEntry.arguments?.getString("heading") ?: "Info"
+            val content = backStackEntry.arguments?.getString("content") ?: ""
+
+            StaticTextScreen(
+                onBack = { navController.popBackStack() },
+                heading = heading,
+                content = content
             )
         }
 
@@ -221,9 +345,41 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
             )
         }
 
+        composable(
+            Screen.AttendanceManagement.route,
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() },
+            popEnterTransition = { defaultPopEnterTransition() },
+            popExitTransition = { defaultPopExitTransition() }
+        ) {
+            AttendanceScreen(
+                onItemClick = { id ->
+                    navController.navigate(Screen.AttendanceDetails.createRoute(id))
+                },
+                onBack = { navController.popBackStack() }
+            )
+        }
+
 
 
         //inner routes
+
+        //attendance routes
+
+        composable(
+            route = Screen.AttendanceDetails.route,
+            arguments = listOf(navArgument("id") { type = NavType.StringType }),
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() },
+            popEnterTransition = { defaultPopEnterTransition() },
+            popExitTransition = { defaultPopExitTransition() }
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id") ?: ""
+            AttendanceDetailScreenWrapper(
+                id = id,
+                onBack = { navController.popBackStack() },
+            )
+        }
 
         //user routes
         composable(
@@ -239,6 +395,19 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
                 onUserCreated = {
                     navController.navigateAndClearBackStack(Screen.AdminHome.route)
                 }
+            )
+        }
+
+        composable(
+            Screen.CreateNotice.route,
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() },
+            popEnterTransition = { defaultPopEnterTransition() },
+            popExitTransition = { defaultPopExitTransition() }
+        ) {
+            val formViewModel = hiltViewModel<ClassFormViewModel>()
+            CreateNoticeRoute(
+                onBack = { navController.popBackStack() },
             )
         }
         composable(

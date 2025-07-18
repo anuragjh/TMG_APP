@@ -21,10 +21,18 @@ class DataStoreManager(private val context: Context) {
         }
     }
 
+    //added for username management
+    suspend fun saveUsername(username: String) {
+        context.dataStore.edit { prefs ->
+            prefs[stringPreferencesKey("username")] = username
+        }
+    }
+
     suspend fun clearAuth() {
         context.dataStore.edit {
             it.remove(DataStoreKeys.TOKEN)
             it.remove(DataStoreKeys.ROLE)
+            it.remove(stringPreferencesKey("username")) // Clear username as well
         }
     }
 
@@ -34,5 +42,8 @@ class DataStoreManager(private val context: Context) {
 
     suspend fun getRole(): String? {
         return context.dataStore.data.first()[DataStoreKeys.ROLE]
+    }
+    suspend fun getUsername(): String? {
+        return context.dataStore.data.first()[stringPreferencesKey("username")]
     }
 }
