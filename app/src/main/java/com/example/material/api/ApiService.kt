@@ -10,6 +10,7 @@ import retrofit2.http.Body
 import retrofit2.http.POST
 import retrofit2.Response
 import okhttp3.ResponseBody
+import org.json.JSONObject
 import retrofit2.http.DELETE
 import retrofit2.http.GET
 import retrofit2.http.HTTP
@@ -221,6 +222,43 @@ interface ApiService {
         @Query("email") email: String,
         @Query("otp") otp: String
     ): Response<Map<String, String>>
+    data class MyAttendanceResponse(
+        val totalClasses: Int,
+        val attendedClasses: Int,
+        val attendance: List<AttendanceEntry>
+    )
+
+    data class AttendanceEntry(
+        val attendanceId: String,
+        val className: String,
+        val teacherUsername: String,
+        val topicCovered: String,
+        val status: String,
+        val date: DateWrapper,
+        val startTime: String,
+        val endTime: String
+    ) {
+        fun toJsonObject(): JSONObject {
+            return JSONObject().apply {
+                put("attendanceId", attendanceId)
+                put("className", className)
+                put("teacherUsername", teacherUsername)
+                put("topicCovered", topicCovered)
+                put("status", status)
+                put("date", JSONObject().apply {
+                    put("seconds", date.seconds)
+                    put("nanos", date.nanos)
+                })
+                put("startTime", startTime)
+                put("endTime", endTime)
+            }
+        }
+    }
+
+    data class DateWrapper(
+        val seconds: Long,
+        val nanos: Int
+    )
 
 
     @POST("api/auth/new-password")
@@ -338,5 +376,7 @@ interface ApiService {
     suspend fun getMyUsername(): Response<ResponseBody>
     @GET("api/update/check")
     suspend fun checkUpdate(@Query("version") version: String): UpdateResponse
+    @GET("/api/my-attendance")
+    suspend fun getMyAttendance(): MyAttendanceResponse
 }
 

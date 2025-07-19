@@ -92,6 +92,7 @@ fun StudentNavHost(
 
                 onBellClick = {navController.navigate(StuDest.notices.route)},
                 onPollClick = {navController.navigate(StuDest.polls.route)},
+                onRoutineClick = { navController.navigate(StuDest.routine.route) },
             )
         }
 
@@ -104,8 +105,13 @@ fun StudentNavHost(
                 }
             )
         }
-        composable(Destination.security.route) {
+        composable(StuDest.security.route) {
             SecurityScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(StuDest.routine.route) {
+            RoutineScreen(
                 onBack = { navController.popBackStack() }
             )
         }

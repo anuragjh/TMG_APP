@@ -1,15 +1,21 @@
 package com.example.material.pages.commons
 
 import android.os.Build
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.material.BuildConfig
 
@@ -18,12 +24,13 @@ import com.example.material.BuildConfig
 fun SettingsScreen(
     onNavigateToStaticPage: (heading: String, content: String) -> Unit,
     onMyAccClick: () -> Unit = {},
-   onUpdateClick: () -> Unit = {},
-    onSecurityClick: () -> Unit = { /* Handle security click */ }
+    onUpdateClick: () -> Unit = {},
+    onSecurityClick: () -> Unit = {}
 ) {
     val settingsItems = listOf(
         Triple(Icons.Default.AccountCircle, "My Account", onMyAccClick),
-
+        Triple(Icons.Default.Lock, "Security", onSecurityClick),
+        Triple(Icons.Default.Android, "App Updates", onUpdateClick),
         Triple(Icons.Default.Article, "Community Guidelines") {
             onNavigateToStaticPage(
                 "Community Guidelines", """
@@ -42,9 +49,6 @@ fun SettingsScreen(
             """.trimIndent()
             )
         },
-
-        Triple(Icons.Default.Lock, "Security", onSecurityClick),
-
         Triple(Icons.Default.Security, "Privacy Policy") {
             onNavigateToStaticPage(
                 "Privacy Policy", """
@@ -57,7 +61,6 @@ fun SettingsScreen(
             """.trimIndent()
             )
         },
-
         Triple(Icons.Default.Description, "Terms of Service") {
             onNavigateToStaticPage(
                 "Terms of Service", """
@@ -71,9 +74,6 @@ fun SettingsScreen(
             """.trimIndent()
             )
         },
-
-        Triple(Icons.Default.Android, "App Updates",onUpdateClick),
-
         Triple(Icons.Default.Help, "Support") {
             onNavigateToStaticPage(
                 "Support", """
@@ -94,69 +94,142 @@ fun SettingsScreen(
         }
     )
 
-
-    Scaffold { padding ->
+    Scaffold(
+        topBar = {
+            CenterAlignedTopAppBar(
+                title = {
+                    Text(
+                        text = "Settings",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
+            )
+        },
+        containerColor = MaterialTheme.colorScheme.background
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
-                .padding(horizontal = 18.dp)
+                .padding(paddingValues)
+                .padding(horizontal = 20.dp) // Generous horizontal padding
         ) {
-            Spacer(modifier = Modifier.height(22.dp))
-
+            Spacer(modifier = Modifier.height(24.dp)) // More space after the app bar
 
             Text(
-                text = "Setting & Info",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                text = "General",
+                style = MaterialTheme.typography.labelLarge, // Appropriate style for section heading
+                color = MaterialTheme.colorScheme.primary, // Highlight section heading
                 modifier = Modifier
-                    .padding(top = 4.dp, bottom = 12.dp)
+                    .padding(bottom = 12.dp)
                     .align(Alignment.Start)
             )
 
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxSize()
+                verticalArrangement = Arrangement.spacedBy(10.dp), // Slightly reduced spacing between cards for denser list
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f), // Make LazyColumn take available space
+                contentPadding = PaddingValues(bottom = 24.dp) // Padding at the bottom of the scrollable list
             ) {
-                items(settingsItems) { (icon, label, onClick) ->
-                    Card(
-                        onClick = onClick,
+                // Displaying "My Account", "Security", "App Updates" first as primary settings
+                items(settingsItems.subList(0, 3)) { (icon, label, onClick) ->
+                    SettingsCard(icon = icon, label = label, onClick = onClick)
+                }
+
+                item {
+                    Spacer(modifier = Modifier.height(24.dp)) // Space before the policy section
+                    Text(
+                        text = "Policies & Support",
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier
+                            .padding(bottom = 12.dp)
+                            .align(Alignment.Start)
+                    )
+                }
+
+                items(settingsItems.subList(3, settingsItems.size)) { (icon, label, onClick) ->
+                    SettingsCard(icon = icon, label = label, onClick = onClick)
+                }
+                item{
+                    Spacer(modifier = Modifier.height(24.dp)) // Space above the footer
+                    Column(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.elevatedCardColors(
-                            containerColor = MaterialTheme.colorScheme.surface,
-                            contentColor = MaterialTheme.colorScheme.onSurface
-                        )
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Icon(
-                                    imageVector = icon,
-                                    contentDescription = label,
-                                    modifier = Modifier.size(24.dp),
-                                    tint = MaterialTheme.colorScheme.primary
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = label,
-                                    style = MaterialTheme.typography.titleMedium
-                                )
-                            }
-                            Icon(
-                                imageVector = Icons.Default.ArrowForward,
-                                contentDescription = "Navigate",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = "App Version ${BuildConfig.VERSION_NAME}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        )
                     }
+                    Spacer(modifier = Modifier.height(16.dp)) // Padding at the very bottom
+                }
                 }
             }
-        }
+
+            // Footer for App Version
+
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SettingsCard(
+    icon: ImageVector,
+    label: String,
+    onClick: () -> Unit
+) {
+    Card(
+        onClick = onClick,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp), // Fixed height for consistent look
+        shape = RoundedCornerShape(12.dp), // Slightly less rounded than main cards for a distinct feel
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerHigh, // A more prominent surface color for interactive elements
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // Subtle elevation
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 20.dp), // Generous padding
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = label,
+                    modifier = Modifier.size(28.dp), // Slightly larger icons
+                    tint = MaterialTheme.colorScheme.primary // Primary color for icons
+                )
+                Spacer(modifier = Modifier.width(18.dp)) // Increased space between icon and text
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium, // Standard for list items
+                    fontWeight = FontWeight.Normal // Standard weight
+                )
+            }
+            Icon(
+                imageVector = Icons.Default.ArrowForwardIos, // Modern iOS-style arrow
+                contentDescription = "Navigate",
+                modifier = Modifier.size(20.dp), // Consistent arrow size
+                tint = MaterialTheme.colorScheme.onSurfaceVariant // Subtler tint for arrow
+            )
+        }
+    }
+}

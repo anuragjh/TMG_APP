@@ -1,24 +1,19 @@
 pluginManagement {
     repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
+        google() // Correct way to include Google's Maven repository
         mavenCentral()
         gradlePluginPortal()
+        maven { url = uri("https://jitpack.io") } // Explicitly add JitPack for plugin resolution
     }
 }
 
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
-        google()
+        google() // Correct way to include Google's Maven repository
         mavenCentral()
         maven {
-            url = uri("https://jitpack.io")
+            url = uri("https://jitpack.io") // JitPack for dependency resolution
         }
     }
 }
