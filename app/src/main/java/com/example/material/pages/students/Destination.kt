@@ -41,6 +41,10 @@ sealed class StuDest(open val route: String) {
 
     data object routine : StuDest("routine")
 
+    data object results : StuDest("results")
+    data object ptm : StuDest("ptm")
+    data object fee : StuDest("fee")
+
 //    data object chatRoom : StuDest("chat_room/{classname}") {
 //        fun createRoute(classname: String): String {
 //            return "chat_room/${Uri.encode(classname)}"

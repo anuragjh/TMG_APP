@@ -2,9 +2,11 @@ package com.example.material.pages.teacher
 
 
 import android.net.Uri
+import android.os.Build
 import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
@@ -23,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.material.BuildConfig
 import com.example.material.datastore.DataStoreManager
+import com.example.material.pages.auth.LoginScreen
 import com.example.material.pages.commons.ChatRoomScreen
 import com.example.material.pages.commons.Importance
 import com.example.material.pages.commons.Notice
@@ -37,10 +40,12 @@ import com.example.material.pages.students.StuDest
 import com.example.material.pages.students.StudentChatScreen
 import com.example.material.viewmodel.AppViewModel
 import kotlinx.coroutines.launch
+import navigateAndClearBackStack
 import java.time.LocalDate
 
 data class ClassNameResponse(val className: String)
 
+@RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
 fun TeacherNavHost(navController: NavHostController,
@@ -57,6 +62,9 @@ fun TeacherNavHost(navController: NavHostController,
         popExitTransition = { defaultPopExitTransition() }
     ) {
         composable(Destination.HOME.route) {
+            val context = LocalContext.current
+            val coroutineScope = rememberCoroutineScope()
+            val appViewModel: AppViewModel = hiltViewModel()
             TeacherHomeContent(
                 onStartClassClick = {
                     navController.navigate(Destination.START_CLASS.route)
@@ -76,7 +84,32 @@ fun TeacherNavHost(navController: NavHostController,
                 onNotificationsClick = {
                     Log.d("NoticeFlow", "▶️  navController.navigate(notice)")
                     navController.navigate(Destination.notice.route)
-                }
+                },
+                onUpdateCheckClick = {
+                    Log.d("UpdateCheck", "▶️  navController.navigate(update)")
+                    navController.navigate(Destination.update.route)
+                },
+
+                onLogoutClick = {
+                    coroutineScope.launch {
+                        DataStoreManager(context).clearAuth()
+                        appViewModel.logout()
+                        Toast.makeText(
+                            context,
+                            "RERUN APP CLOSE-OPEN APP ONCE TO LOGIN",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                },
+                onResultsClick = {
+                    navController.navigate(Destination.START_RESULTS.route)
+                },
+                onMarksClick = {
+                    navController.navigate(Destination.marks.route)
+                },
+                onPtmClick = {
+                    navController.navigate(Destination.ptm.route)
+                },
 
 
 
@@ -116,6 +149,30 @@ fun TeacherNavHost(navController: NavHostController,
                 onAddNoteClick = { navController.navigate(Destination.sharenotes.route) }
             )
         }
+        composable(Destination.ptm.route) {
+            PtmScreen(
+                onBack = { navController.popBackStack() },
+                onRequestClick = {
+                }
+            )
+        }
+
+        composable(Destination.marks.route) {
+            ResultListScreen(
+                teacherName = "Teacher",
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable(Destination.Results.route,
+                arguments = listOf(navArgument("id") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val classId = backStackEntry.arguments?.getString("id") ?: ""
+            ResultEntryScreen(
+                classId = classId,
+                onBack = { navController.popBackStack() }
+            )
+        }
 
 
         composable(Destination.SETTINGS.route) {
@@ -142,6 +199,15 @@ fun TeacherNavHost(navController: NavHostController,
         }
 
 
+        composable(Destination.START_RESULTS.route) {
+            StartResultScreen(
+                onBack = { navController.popBackStack() },
+                onCreateClass = { id ->
+                    navController.navigate(Destination.Results.createRoute(id))
+
+                }
+            )
+        }
 
 
 
@@ -230,6 +296,25 @@ fun TeacherNavHost(navController: NavHostController,
             EndClassScreen(
                 classId = classId,
                 onBackClick = { navController.navigate(Destination.HOME.route) }
+            )
+        }
+
+        composable(
+            Screen.Login.route,
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() },
+            popEnterTransition = { defaultPopEnterTransition() },
+            popExitTransition = { defaultPopExitTransition() }
+        ) {
+            LoginScreen(
+                onForgotPassword = { navController.navigate(Screen.ForgotPassword.route) },
+                onLoginSuccess = { token, role ->
+                    when (role) {
+                        "STUDENT" -> navController.navigateAndClearBackStack(Screen.StudentHome.route)
+                        "TEACHER" -> navController.navigateAndClearBackStack(Screen.TeacherHome.route)
+                        "ADMIN" -> navController.navigateAndClearBackStack(Screen.AdminHome.route)
+                    }
+                }
             )
         }
 

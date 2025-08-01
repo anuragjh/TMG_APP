@@ -18,7 +18,6 @@ object RetrofitClient {
         .addInterceptor(AuthInterceptor { tokenProvider() })
         .build()
 
-    // ✅ Expose the Retrofit instance for reuse
     val retrofit: Retrofit by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)

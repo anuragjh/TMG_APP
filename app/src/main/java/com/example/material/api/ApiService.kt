@@ -4,21 +4,21 @@ package com.example.material.api
 import com.example.material.pages.commons.ChatMessage
 import com.example.material.pages.commons.Importance
 import com.example.material.pages.teacher.NoteItem
+import com.example.material.viewmodel.teacher.ResultData
 import okhttp3.MultipartBody
 import okhttp3.RequestBody
-import retrofit2.http.Body
-import retrofit2.http.POST
-import retrofit2.Response
 import okhttp3.ResponseBody
-import org.json.JSONObject
-import retrofit2.http.DELETE
+import retrofit2.Response
+import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.HTTP
 import retrofit2.http.Multipart
+import retrofit2.http.POST
 import retrofit2.http.PUT
 import retrofit2.http.Part
 import retrofit2.http.Path
 import retrofit2.http.Query
+import retrofit2.http.Streaming
 
 data class LoginRequest(val username: String, val password: String)
 data class LoginResponse(
@@ -206,6 +206,46 @@ data class UpdateData(
     val description: String
 )
 
+data class AttendanceList(
+    val attendance : List<ApiService.AttendanceEntry>
+)
+data class Message(
+    val message: String
+)
+data class RoutineEntry(
+    val id: String,
+    val className: String,
+    val startTime: String,
+    val teacherName: String,
+    val dayOfWeek: DAYS // e.g., "MONDAY"
+)
+enum class DAYS {
+    MONDAY,
+    TUESDAY,
+    WEDNESDAY,
+    THURSDAY,
+    FRIDAY,
+    SATURDAY,
+    SUNDAY
+}
+
+data class StudentResult(
+    val testName: String,
+    val teacherName: String,
+    val rank: String,
+    val examDate: String,
+    val marksObtained: Int,
+    val totalMarks: Int,
+    val remark: String
+)
+data class PTMRequester(
+    var id: String? = null,
+    var requestedBy: String,
+    var dateToBeAppearedBy: String,
+    var status: String,
+    var attendeName: String
+)
+
 
 interface ApiService {
 
@@ -237,23 +277,7 @@ interface ApiService {
         val date: DateWrapper,
         val startTime: String,
         val endTime: String
-    ) {
-        fun toJsonObject(): JSONObject {
-            return JSONObject().apply {
-                put("attendanceId", attendanceId)
-                put("className", className)
-                put("teacherUsername", teacherUsername)
-                put("topicCovered", topicCovered)
-                put("status", status)
-                put("date", JSONObject().apply {
-                    put("seconds", date.seconds)
-                    put("nanos", date.nanos)
-                })
-                put("startTime", startTime)
-                put("endTime", endTime)
-            }
-        }
-    }
+    )
 
     data class DateWrapper(
         val seconds: Long,
@@ -378,5 +402,33 @@ interface ApiService {
     suspend fun checkUpdate(@Query("version") version: String): UpdateResponse
     @GET("/api/my-attendance")
     suspend fun getMyAttendance(): MyAttendanceResponse
+    @POST("/api/generate-pdf")
+    @Streaming
+    suspend fun generatePdf(
+        @Body request: RequestBody
+    ): Response<Message>
+    @GET("/api/routines")
+    suspend fun getRoutines(): List<RoutineEntry>
+
+    @PUT("api/auth/update-password")
+    suspend fun updatePassword(
+        @Body body: Map<String, String>
+    ): Response<Void>
+
+    @POST("/create-result")
+    suspend fun createResult(
+        @Body request: ResultData
+    ):Response<Message>
+    @GET("/get-result-by-teacher")
+    suspend fun getTeacherResults(): List<ResultData>
+
+    @GET("/get-result")
+    suspend fun getStudentResults(): List<StudentResult>
+
+    @GET("/api/ptm/by-requester")
+    suspend fun getPtmRequesters(): List<PTMRequester>
+
+    @GET("/api/ptm/by-attendee")
+    suspend fun getPtmRequestersByAttendee(): List<PTMRequester>
 }
 

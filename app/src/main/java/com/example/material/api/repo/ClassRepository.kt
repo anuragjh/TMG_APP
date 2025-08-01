@@ -1,13 +1,19 @@
 package com.example.material.api.repo
 
+import android.util.Log
 import com.example.material.api.AddUserRequest
 import com.example.material.api.ApiService
 import com.example.material.api.ClassCreationRequest
 import com.example.material.api.ClassDetails
 import com.example.material.api.ClassNameResponse
+import com.example.material.api.Message
 import com.example.material.api.NonUserResponse
+import com.example.material.api.PTMRequester
 import com.example.material.api.RetrofitClient
+import com.example.material.api.StudentResult
 import com.example.material.api.UserProfile
+import com.example.material.viewmodel.teacher.ResultData
+import com.google.gson.JsonSyntaxException
 import okhttp3.ResponseBody
 import retrofit2.Response
 import javax.inject.Inject
@@ -63,6 +69,48 @@ class ClassRepositoryForUsers @Inject constructor(
 ) {
     suspend fun fetchNonUsers(className: String): List<NonUserResponse> {
         return api.getUsers(className)
+    }
+    suspend fun createResult(res : ResultData): Response<Message> {
+        return api.createResult(res)
+    }
+    suspend fun getTeacherResults(): List<ResultData> {
+        return api.getTeacherResults()
+    }
+
+    suspend fun getPtmRequesters(): List<PTMRequester> {
+        return try {
+            return api.getPtmRequesters()
+        } catch (e: JsonSyntaxException) {
+            Log.e("PTM", "JsonSyntaxException: The API returned an invalid format for the results.", e)
+            emptyList()
+        } catch (e: Exception) {
+            Log.e("PTM", "An unexpected error occurred while fetching results.", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getPtmRequestersByAttendee(): List<PTMRequester> {
+        return try {
+            return api.getPtmRequestersByAttendee()
+        } catch (e: JsonSyntaxException) {
+            Log.e("PTM", "JsonSyntaxException: The API returned an invalid format for the results.", e)
+            emptyList()
+        } catch (e: Exception) {
+            Log.e("PTM", "An unexpected error occurred while fetching results.", e)
+            emptyList()
+        }
+    }
+
+    suspend fun getStudentResults(): List<StudentResult> {
+        return try {
+            api.getStudentResults()
+        } catch (e: JsonSyntaxException) {
+            Log.e("StudentResults", "JsonSyntaxException: The API returned an invalid format for the results.", e)
+            emptyList()
+        } catch (e: Exception) {
+            Log.e("StudentResults", "An unexpected error occurred while fetching results.", e)
+            emptyList()
+        }
     }
     suspend fun removeUsersFromClass(
         className: String,

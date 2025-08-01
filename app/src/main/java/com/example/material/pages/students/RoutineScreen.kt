@@ -35,7 +35,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -45,46 +45,26 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import java.time.DayOfWeek
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.material.api.DAYS
+import com.example.material.api.RoutineEntry
+import com.example.material.viewmodel.student.RoutineViewModel
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RoutineScreen(onBack: () -> Unit = {}) {
+    val vm: RoutineViewModel = hiltViewModel()
+    val routineMap by vm.routineMap
+    val isLoading by vm.isLoading // Observe the loading state
 
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
-    val fullDays = listOf("MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY", "SUNDAY")
 
     val todayIndex = LocalDate.now().dayOfWeek.value - 1
-    var selectedDayIndex by remember { mutableStateOf(todayIndex) }
+    var selectedDayIndex by remember { mutableIntStateOf(todayIndex) }
 
-    val routineMap = remember {
-        mapOf(
-            DayOfWeek.MONDAY.ordinal to listOf(
-                "Math Class" to "8:00 AM - 9:00 AM",
-                "Physics Lecture" to "10:00 AM - 11:30 AM"
-            ),
-            DayOfWeek.TUESDAY.ordinal to listOf(
-                "Chemistry Lab" to "9:30 AM - 11:00 AM"
-            ),
-            DayOfWeek.WEDNESDAY.ordinal to listOf(
-                "English Literature" to "1:00 PM - 2:00 PM",
-                "Computer Science" to "3:00 PM - 4:30 PM"
-            ),
-            DayOfWeek.THURSDAY.ordinal to listOf(
-                "Biology Practical" to "11:00 AM - 12:30 PM"
-            ),
-            DayOfWeek.FRIDAY.ordinal to listOf(
-                "Economics Theory" to "9:00 AM - 10:00 AM",
-                "Physical Education" to "2:00 PM - 3:00 PM"
-            ),
-            DayOfWeek.SATURDAY.ordinal to listOf(
-                "History Class" to "4:00 PM - 5:00 PM",
-                "Science Class" to "6:00 PM - 7:00 PM"
-            ),
-            DayOfWeek.SUNDAY.ordinal to emptyList()
-        )
-    }
+    val selectedDay = DAYS.entries[selectedDayIndex]
+    val classes = routineMap[selectedDay] ?: emptyList()
 
     Scaffold(
         topBar = {
@@ -159,14 +139,16 @@ fun RoutineScreen(onBack: () -> Unit = {}) {
             Spacer(modifier = Modifier.height(24.dp))
 
             Text(
-                text = "Routine for ${fullDays[selectedDayIndex]}",
+                text = "Routine for ${DAYS.entries[selectedDayIndex]}",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
                 color = MaterialTheme.colorScheme.onBackground,
                 modifier = Modifier.padding(bottom = 16.dp)
             )
 
-            val classes = routineMap[selectedDayIndex] ?: emptyList()
-            if (classes.isEmpty()) {
+            // Conditional rendering based on isLoading state
+            if (isLoading) {
+                RoutineSkeletonLoader() // Display skeleton when loading
+            } else if (classes.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -194,62 +176,134 @@ fun RoutineScreen(onBack: () -> Unit = {}) {
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 16.dp)
                 ) {
-                    items(classes) { (subject, time) ->
-                        Card(
-                            shape = RoundedCornerShape(16.dp),
-                            colors = CardDefaults.cardColors(
-                                containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                                contentColor = MaterialTheme.colorScheme.onSurface
-                            ),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(IntrinsicSize.Min)
-                                    .padding(horizontal = 20.dp, vertical = 18.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxHeight()
-                                        .width(4.dp)
-                                        .clip(RoundedCornerShape(2.dp))
-                                        .background(MaterialTheme.colorScheme.tertiary)
-                                )
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = subject,
-                                        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(
-                                            imageVector = Icons.Default.Schedule,
-                                            contentDescription = "Time",
-                                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                            modifier = Modifier.size(16.dp)
-                                        )
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text(
-                                            text = time,
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
-                                Spacer(modifier = Modifier.width(16.dp))
-                                Text(
-                                    text = "by Pawan Sir",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                                )
-                            }
-                        }
+                    items(classes) { routineEntry -> // Use routineEntry directly
+                        RoutineCard(routineEntry = routineEntry) // Pass the full RoutineEntry
                     }
+                }
+            }
+        }
+    }
+}
+
+// Composable for the Routine Card
+@Composable
+fun RoutineCard(routineEntry: RoutineEntry) {
+    Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            contentColor = MaterialTheme.colorScheme.onSurface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Min)
+                .padding(horizontal = 20.dp, vertical = 18.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(4.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(MaterialTheme.colorScheme.tertiary)
+            )
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = routineEntry.className, // Display class name
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = "Time",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = routineEntry.startTime, // Display start time
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Spacer(modifier = Modifier.width(16.dp))
+            Text(
+                text = "by ${routineEntry.teacherName}", // Display teacher name
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+            )
+        }
+    }
+}
+
+// Composable for the Skeleton Loader
+@Composable
+fun RoutineSkeletonLoader() {
+    LazyColumn(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        contentPadding = PaddingValues(bottom = 16.dp)
+    ) {
+        items(3) { // Display 3 skeleton cards as a placeholder
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow.copy(alpha = 0.6f),
+                ),
+                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(90.dp) // Fixed height for skeleton cards
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp, vertical = 18.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxHeight(0.8f)
+                            .width(4.dp)
+                            .clip(RoundedCornerShape(2.dp))
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.7f)
+                                .height(20.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f))
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(0.4f)
+                                .height(16.dp)
+                                .clip(RoundedCornerShape(4.dp))
+                                .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f))
+                        )
+                    }
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Box(
+                        modifier = Modifier
+                            .width(80.dp)
+                            .height(16.dp)
+                            .clip(RoundedCornerShape(4.dp))
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.15f))
+                    )
                 }
             }
         }

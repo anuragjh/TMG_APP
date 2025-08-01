@@ -2,7 +2,7 @@ package com.example.material.pages.commons
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.clickable // Not used, can remove if not intended for future use
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +14,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn // Added for scrollability
+import androidx.compose.foundation.lazy.items // Added for LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -117,100 +119,106 @@ fun ProfileScreen(
             is ProfileUiState.Success -> {
                 val profile = (uiState as ProfileUiState.Success).profile
 
-                Column(
+                // Use LazyColumn for the main content to make it scrollable
+                LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
                         .padding(padding)
-                        .padding(horizontal = 24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .padding(horizontal = 24.dp), // Apply horizontal padding here
+                    horizontalAlignment = Alignment.CenterHorizontally // Apply to items inside LazyColumn
                 ) {
-                    Spacer(Modifier.height(32.dp))
+                    item {
+                        Spacer(Modifier.height(32.dp))
 
-                    Box(contentAlignment = Alignment.Center) {
-                        Image(
-                            painter = painterResource(id = R.drawable.logo),
-                            contentDescription = "Profile Picture",
-                            contentScale = ContentScale.Crop,
-                            modifier = Modifier
-                                .size(140.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.primaryContainer)
-                        )
+                        Box(contentAlignment = Alignment.Center) {
+                            Image(
+                                painter = painterResource(id = R.drawable.logo), // Ensure R.drawable.logo exists
+                                contentDescription = "Profile Picture",
+                                contentScale = ContentScale.Crop,
+                                modifier = Modifier
+                                    .size(140.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.primaryContainer)
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.height(48.dp))
                     }
 
-                    Spacer(modifier = Modifier.height(48.dp))
+                    // Profile Details
+                    item { ProfileDetailItem(Icons.Default.Person, "Name", profile.name) }
+                    item { ProfileDetailItem(Icons.Default.VerifiedUser, "Username", profile.username) }
+                    item { ProfileDetailItem(Icons.Default.Phone, "Phone", profile.phone) }
+                    item { ProfileDetailItem(Icons.Default.Email, "Email", profile.gmail) }
 
-                    ProfileDetailItem(Icons.Default.Person, "Name", profile.name)
-                    ProfileDetailItem(Icons.Default.VerifiedUser, "Username", profile.username)
-                    ProfileDetailItem(Icons.Default.Phone, "Phone", profile.phone)
-                    ProfileDetailItem(Icons.Default.Email, "Email", profile.gmail)
-
+                    // Classes Joined Section
                     if (profile.classes.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(24.dp))
-                        Text(
-                            "Classes Joined",
-                            style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                            color = MaterialTheme.colorScheme.onBackground,
-                            modifier = Modifier.align(Alignment.Start)
-                        )
+                        item {
+                            Spacer(modifier = Modifier.height(24.dp))
+                            Text(
+                                "Classes Joined",
+                                style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                                color = MaterialTheme.colorScheme.onBackground,
+                                modifier = Modifier.fillMaxWidth() // Text should fill width to align start
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
 
-                        Spacer(modifier = Modifier.height(12.dp))
-
-                        Column(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            profile.classes.forEach { className ->
-                                Card(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    shape = RoundedCornerShape(12.dp),
-                                    colors = CardDefaults.cardColors(
-                                        contentColor = MaterialTheme.colorScheme.onSurface
-                                    ),
+                        // Use items for the list of classes
+                        items(profile.classes) { className ->
+                            Card(
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    contentColor = MaterialTheme.colorScheme.onSurface,
+                                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow // Explicitly set card background
+                                ),
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp) // Subtle elevation
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.padding(16.dp)
                                 ) {
-                                    Row(
-                                        verticalAlignment = Alignment.CenterVertically,
-                                        modifier = Modifier.padding(16.dp)
-                                    ) {
-                                        Icon(
-                                            imageVector = Icons.Default.School,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(24.dp),
-                                            tint = MaterialTheme.colorScheme.tertiary
-                                        )
-                                        Spacer(modifier = Modifier.width(16.dp))
-                                        Text(
-                                            text = className,
-                                            style = MaterialTheme.typography.bodyLarge,
-                                            fontWeight = FontWeight.Medium
-                                        )
-                                    }
+                                    Icon(
+                                        imageVector = Icons.Default.School,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(24.dp),
+                                        tint = MaterialTheme.colorScheme.tertiary
+                                    )
+                                    Spacer(modifier = Modifier.width(16.dp))
+                                    Text(
+                                        text = className,
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 }
                             }
                         }
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
+                    // Logout Button (fixed at bottom, scrolls with content in LazyColumn)
+                    item {
+                        Spacer(modifier = Modifier.height(32.dp)) // More space before logout button
 
-                    Button(
-                        onClick = onLogoutClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .padding(vertical = 8.dp), // Adjusted padding to control button height
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error,
-                            contentColor = MaterialTheme.colorScheme.onError
-                        ),
-                        shape = RoundedCornerShape(16.dp) // Rounded button
-                    ) {
-                        Text(
-                            "Logout",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Button(
+                            onClick = onLogoutClick,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error,
+                                contentColor = MaterialTheme.colorScheme.onError
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text(
+                                "Logout",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(24.dp)) // Spacing at the very bottom of the scrollable content
                     }
-                    Spacer(modifier = Modifier.height(16.dp)) // Spacing at the very bottom
                 }
             }
         }
@@ -226,7 +234,7 @@ fun ProfileDetailItem(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 10.dp) // Adjusted vertical padding
+            .padding(vertical = 10.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -242,25 +250,18 @@ fun ProfileDetailItem(
             Column {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelLarge, // More prominent label
+                    style = MaterialTheme.typography.labelLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     text = value,
                     color = MaterialTheme.colorScheme.onSurface,
-                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium), // Slightly bolder value
+                    style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Medium),
                 )
             }
         }
-        Spacer(Modifier.height(8.dp)) // Space before divider
-        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f)) // Subtle divider
+        Spacer(Modifier.height(8.dp))
+        Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-fun ProfileScreenPreview() {
-    MaterialTheme {
-        ProfileScreen()
-    }
-}

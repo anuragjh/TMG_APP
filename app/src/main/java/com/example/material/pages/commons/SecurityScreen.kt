@@ -2,7 +2,9 @@ package com.example.material.pages.commons
 
 import android.widget.Toast
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -16,16 +18,21 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.style.TextAlign
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.material.R
+import com.example.material.viewmodel.common.PassViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SecurityScreen(
     onBack: () -> Unit = { }
 ) {
+    val viewModel: PassViewModel = hiltViewModel()
+    val isUpdating = viewModel.isUpdating
     var newPassword by remember { mutableStateOf("") }
     var repeatPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -144,16 +151,28 @@ fun SecurityScreen(
                         showValidationError = !isPasswordValid(newPassword) || newPassword != repeatPassword
                         if (!showValidationError) {
                             focusManager.clearFocus()
-                            Toast.makeText(context, "Dummy Password Updated", Toast.LENGTH_SHORT).show()
-                            onBack()
+                            viewModel.updatePassword(newPassword) { success, message ->
+                                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+                                if (success) onBack()
+                            }
                         }
                     },
+                    enabled = !isUpdating,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp)
                 ) {
-                    Text("Update Password")
+                    if (isUpdating) {
+                        CircularProgressIndicator(
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    } else {
+                        Text("Update Password")
+                    }
                 }
+
 
                 Spacer(modifier = Modifier.height(32.dp))
             }

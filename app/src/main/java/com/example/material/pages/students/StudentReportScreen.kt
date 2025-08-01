@@ -1,6 +1,8 @@
 package com.example.material.pages.students
 
+import android.content.Intent
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -14,9 +16,13 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -24,15 +30,260 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.core.content.FileProvider
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.example.material.api.ApiService
+import com.example.material.api.AttendanceList
 import com.example.material.viewmodel.student.AttendanceUiState
 import com.example.material.viewmodel.student.StudentViewModel
+import kotlinx.coroutines.launch
+import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+
+// --- Data class for AttendanceList ---
+// This is needed because you're passing a List<ApiService.AttendanceEntry>
+// into a ViewModel function, and Compose's navigation or ViewModel
+// might require it to be wrapped in a Parcelable or Serializable class
+// if it were to be passed as an argument. For simple direct usage here,
+// a data class is sufficient.
+
+// --- Global Composable Functions ---
+// Moved these composable functions outside of any other composable
+// to make them accessible throughout the file and avoid "Unresolved reference" errors.
+
+@Composable
+private fun CircularActionButton(
+    icon: ImageVector,
+    contentDesc: String,
+    onClick: () -> Unit
+) {
+    Surface(
+        shape = CircleShape,
+        color = MaterialTheme.colorScheme.surfaceContainerHigh,
+        modifier = Modifier
+            .size(48.dp)
+            .clickable(onClick = onClick)
+    ) {
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDesc,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(26.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun CompactInfoCard(
+    modifier: Modifier = Modifier,
+    title: String,
+    icon: ImageVector,
+    iconTint: Color,
+    backgroundColor: Color,
+    onCardClick: () -> Unit
+) {
+    Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = backgroundColor),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = modifier.clickable { onCardClick() }
+    ) {
+        Column(
+            Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = iconTint,
+                modifier = Modifier.size(48.dp)
+            )
+            Spacer(Modifier.height(16.dp))
+            Text(
+                title,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
+fun RoutineCard(currentDay: String, onRoutineClick: () -> Unit = {}) {
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onRoutineClick() }
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.CalendarMonth,
+                    contentDescription = "Routine",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    "Daily Routine",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            Text(
+                "Today is $currentDay",
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(16.dp))
+            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            Spacer(Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(
+                    onClick = { onRoutineClick() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("View Full Routine", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun FeesCard(onFeeClick: () -> Unit = {}) {
+    Card(
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onFeeClick() }
+    ) {
+        Column(Modifier.padding(24.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Default.AccountBalanceWallet,
+                    contentDescription = "Fees",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    "Fees Status",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            if (true) {
+                Text(
+                    "4 months due",
+                    color = MaterialTheme.colorScheme.error,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Please settle your outstanding balance.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            } else {
+                Text(
+                    "No outstanding fees",
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMedium
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    "Your fees are up to date. Keep up the good work!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Spacer(Modifier.height(16.dp))
+            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
+            Spacer(Modifier.height(12.dp))
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(
+                    onClick = { onFeeClick() },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Text("View Payment History", style = MaterialTheme.typography.labelLarge)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SemiCircularDualProgressIndicator(
+    presentPercentage: Float,
+    absentPercentage: Float,
+    presentColor: Color,
+    absentColor: Color,
+    trackColor: Color,
+    strokeWidth: Dp,
+    modifier: Modifier = Modifier
+) {
+    val animatedPresentProgress by animateFloatAsState(
+        targetValue = presentPercentage,
+        animationSpec = tween(durationMillis = 1000, delayMillis = 200)
+    )
+    val animatedAbsentProgress by animateFloatAsState(
+        targetValue = absentPercentage,
+        animationSpec = tween(durationMillis = 1000, delayMillis = 200)
+    )
+
+    Canvas(modifier = modifier) {
+        // Draw the full semi-circle track background
+        drawArc(
+            color = trackColor,
+            startAngle = 180f, // Start from the left horizontal
+            sweepAngle = 180f, // Sweep 180 degrees for a semi-circle
+            useCenter = false,
+            style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Round)
+        )
+
+        // Draw the Present progress arc
+        drawArc(
+            color = presentColor,
+            startAngle = 180f, // Start from the left horizontal
+            sweepAngle = animatedPresentProgress * 180f, // Animate sweep based on percentage
+            useCenter = false,
+            style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Round)
+        )
+
+        // Draw the Absent progress arc
+        // It starts immediately after the Present arc ends
+        drawArc(
+            color = absentColor,
+            startAngle = 180f + (animatedPresentProgress * 180f), // Start where present arc ends (180 degrees max sweep for semi-circle)
+            sweepAngle = animatedAbsentProgress * 180f, // Animate sweep based on percentage
+            useCenter = false,
+            style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Round)
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +291,9 @@ fun StudentReportScreen(
     onBellClick: () -> Unit = {},
     onPollClick: () -> Unit = {},
     onRoutineClick: () -> Unit = {},
+    onResultClick : () -> Unit = {},
+    onPTMClick: () -> Unit = {},
+    onFeeClick: () -> Unit = {},
 ) {
     val currentDay = remember { SimpleDateFormat("EEEE", Locale.getDefault()).format(Date()) }
 
@@ -88,7 +342,7 @@ fun StudentReportScreen(
                     icon = Icons.Default.School,
                     iconTint = MaterialTheme.colorScheme.primary,
                     backgroundColor = MaterialTheme.colorScheme.primaryContainer,
-                    onCardClick = {}
+                    onCardClick = {onResultClick()}
                 )
                 CompactInfoCard(
                     modifier = Modifier.weight(1f),
@@ -96,7 +350,7 @@ fun StudentReportScreen(
                     icon = Icons.Default.Diversity3,
                     iconTint = MaterialTheme.colorScheme.tertiary,
                     backgroundColor = MaterialTheme.colorScheme.tertiaryContainer,
-                    onCardClick = {}
+                    onCardClick = {onPTMClick()}
                 )
             }
         }
@@ -106,7 +360,7 @@ fun StudentReportScreen(
         }
 
         item {
-            FeesCard(isDue = true)
+            FeesCard(onFeeClick = onFeeClick)
         }
 
         item {
@@ -134,9 +388,24 @@ fun AttendanceCard(
             val data = (state as AttendanceUiState.Success).data
             val t = data.attendance
             Log.d("AttendanceCard", "Attendance data: ${t}")
+
             val present = data.attendedClasses
             val total = data.totalClasses
-            StylishAttendanceCard(present, total, onDetailsClick)
+
+            // In your Composable
+            val context = LocalContext.current
+            val attendanceList = AttendanceList(data.attendance) // data is MyAttendanceResponse
+
+            StylishAttendanceCard(
+                present = data.attendedClasses,
+                total = data.totalClasses,
+                onDetailsClick = {
+//
+                },
+                attendanceList = data.attendance
+            )
+
+
         }
         is AttendanceUiState.Error -> Text("Error: ${(state as AttendanceUiState.Error).message}")
     }
@@ -201,10 +470,18 @@ fun LoadingAttendanceCard() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StylishAttendanceCard(present: Int, total: Int, onDetailsClick: () -> Unit) {
+fun StylishAttendanceCard(
+    present: Int,
+    total: Int,
+    onDetailsClick: () -> Unit,
+    vm: StudentViewModel = hiltViewModel(),
+    attendanceList: List<ApiService.AttendanceEntry> = emptyList()
+) {
+
     val presentPercentage = if (total > 0) present / total.toFloat() else 0f
     val absentPercentage = if (total > 0) (total - present) / total.toFloat() else 0f
     val displayPercentage = (presentPercentage * 100).toInt()
+    var showDialog by remember { mutableStateOf(false) }
 
     Card(
         shape = RoundedCornerShape(24.dp),
@@ -213,9 +490,17 @@ fun StylishAttendanceCard(present: Int, total: Int, onDetailsClick: () -> Unit) 
     ) {
         Column(Modifier.padding(24.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Default.Schedule, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(28.dp))
+                Icon(
+                    Icons.Default.Schedule,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(28.dp)
+                )
                 Spacer(Modifier.width(12.dp))
-                Text("Average Attendance", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold))
+                Text(
+                    "Average Attendance",
+                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold)
+                )
             }
 
             Spacer(Modifier.height(24.dp))
@@ -261,16 +546,40 @@ fun StylishAttendanceCard(present: Int, total: Int, onDetailsClick: () -> Unit) 
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("$total", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.onSurface)
-                    Text("Total Classes", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text(
+                        "$total",
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        "Total Classes",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("$present", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.primary)
-                    Text("Present", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.primary)
+                    Text(
+                        "$present",
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        "Present",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
                 }
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("${total - present}", style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold), color = MaterialTheme.colorScheme.error)
-                    Text("Absent", style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error)
+                    Text(
+                        "${total - present}",
+                        style = MaterialTheme.typography.headlineSmall.copy(fontWeight = FontWeight.Bold),
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Text(
+                        "Absent",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
 
@@ -278,61 +587,54 @@ fun StylishAttendanceCard(present: Int, total: Int, onDetailsClick: () -> Unit) 
             Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
             Spacer(Modifier.height(12.dp))
             Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(onClick = onDetailsClick) {
-                    Text("View Full Report", style = MaterialTheme.typography.labelLarge)
+
+
+                val context = LocalContext.current
+                val scope = rememberCoroutineScope()
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    TextButton(
+                        onClick = {
+                            showDialog = true
+                        }
+                    ) {
+                        Text("Send Report to Mail", style = MaterialTheme.typography.labelLarge)
+                    }
                 }
+
+                if (showDialog) {
+                    AlertDialog(
+                        onDismissRequest = { showDialog = false },
+                        title = { Text("Send Attendance Report?") },
+                        text = { Text("Do you want to receive the attendance report on your mail?") },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                showDialog = false
+                                scope.launch {
+                                    vm.viewFullReportAndShowMessage(
+                                        AttendanceList(attendanceList)
+                                    ) { message ->
+                                        Toast.makeText(context, message ?: "No message", Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }) {
+                                Text("Yes")
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { showDialog = false }) {
+                                Text("No")
+                            }
+                        }
+                    )
+                }
+
+
             }
         }
-    }
-}
-
-@Composable
-fun SemiCircularDualProgressIndicator(
-    presentPercentage: Float,
-    absentPercentage: Float,
-    presentColor: Color,
-    absentColor: Color,
-    trackColor: Color,
-    strokeWidth: Dp,
-    modifier: Modifier = Modifier
-) {
-    val animatedPresentProgress by animateFloatAsState(
-        targetValue = presentPercentage,
-        animationSpec = tween(durationMillis = 1000, delayMillis = 200)
-    )
-    val animatedAbsentProgress by animateFloatAsState(
-        targetValue = absentPercentage,
-        animationSpec = tween(durationMillis = 1000, delayMillis = 200)
-    )
-
-    Canvas(modifier = modifier) {
-        // Draw the full semi-circle track background
-        drawArc(
-            color = trackColor,
-            startAngle = 180f, // Start from the left horizontal
-            sweepAngle = 180f, // Sweep 180 degrees for a semi-circle
-            useCenter = false,
-            style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Round)
-        )
-
-        // Draw the Present progress arc
-        drawArc(
-            color = presentColor,
-            startAngle = 180f, // Start from the left horizontal
-            sweepAngle = animatedPresentProgress * 180f, // Animate sweep based on percentage
-            useCenter = false,
-            style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Round)
-        )
-
-        // Draw the Absent progress arc
-        // It starts immediately after the Present arc ends
-        drawArc(
-            color = absentColor,
-            startAngle = 180f + (animatedPresentProgress * 180f), // Start where present arc ends (180 degrees max sweep for semi-circle)
-            sweepAngle = animatedAbsentProgress * 180f, // Animate sweep based on percentage
-            useCenter = false,
-            style = Stroke(strokeWidth.toPx(), cap = StrokeCap.Round)
-        )
     }
 }
 
@@ -352,182 +654,5 @@ fun AttendanceLegend(label: String, color: Color) {
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
-}
-
-@Composable
-fun CompactInfoCard(
-    modifier: Modifier = Modifier,
-    title: String,
-    icon: ImageVector,
-    iconTint: Color,
-    backgroundColor: Color,
-    onCardClick: () -> Unit
-) {
-    Card(
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = backgroundColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        modifier = modifier.clickable { onCardClick() }
-    ) {
-        Column(
-            Modifier
-                .padding(20.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(48.dp)
-            )
-            Spacer(Modifier.height(16.dp))
-            Text(
-                title,
-                fontWeight = FontWeight.SemiBold,
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-    }
-}
-
-@Composable
-fun RoutineCard(currentDay: String , onRoutineClick: () -> Unit = {} ) {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {onRoutineClick()}
-    ) {
-        Column(Modifier.padding(24.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.CalendarMonth,
-                    contentDescription = "Routine",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    "Daily Routine",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-            Text(
-                "Today is $currentDay",
-                style = MaterialTheme.typography.bodyLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Spacer(Modifier.height(16.dp))
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-            Spacer(Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(
-                    onClick = { onRoutineClick() },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("View Full Routine", style = MaterialTheme.typography.labelLarge)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun FeesCard(isDue: Boolean) {
-    Card(
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { /* Handle Fees card click */ }
-    ) {
-        Column(Modifier.padding(24.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Default.AccountBalanceWallet,
-                    contentDescription = "Fees",
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(28.dp)
-                )
-                Spacer(Modifier.width(12.dp))
-                Text(
-                    "Fees Status",
-                    style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold),
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-            if (isDue) {
-                Text(
-                    "4 months due",
-                    color = MaterialTheme.colorScheme.error,
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Please settle your outstanding balance.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                Text(
-                    "No outstanding fees",
-                    color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.SemiBold,
-                    style = MaterialTheme.typography.titleMedium
-                )
-                Spacer(Modifier.height(4.dp))
-                Text(
-                    "Your fees are up to date. Keep up the good work!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            Spacer(Modifier.height(16.dp))
-            Divider(color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.4f))
-            Spacer(Modifier.height(12.dp))
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                TextButton(
-                    onClick = { /* Handle details click */ },
-                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
-                ) {
-                    Text("View Payment History", style = MaterialTheme.typography.labelLarge)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun CircularActionButton(
-    icon: ImageVector,
-    contentDesc: String,
-    onClick: () -> Unit
-) {
-    Surface(
-        shape = CircleShape,
-        color = MaterialTheme.colorScheme.surfaceContainerHigh,
-        modifier = Modifier
-            .size(48.dp)
-            .clickable(onClick = onClick)
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                imageVector = icon,
-                contentDescription = contentDesc,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.size(26.dp)
-            )
-        }
     }
 }

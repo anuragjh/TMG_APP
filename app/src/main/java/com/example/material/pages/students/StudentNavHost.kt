@@ -93,6 +93,9 @@ fun StudentNavHost(
                 onBellClick = {navController.navigate(StuDest.notices.route)},
                 onPollClick = {navController.navigate(StuDest.polls.route)},
                 onRoutineClick = { navController.navigate(StuDest.routine.route) },
+                onResultClick = { navController.navigate(StuDest.results.route) },
+                onPTMClick = { navController.navigate(StuDest.ptm.route) },
+                onFeeClick = { navController.navigate(StuDest.fee.route) },
             )
         }
 
@@ -131,6 +134,22 @@ fun StudentNavHost(
             )
         }
 
+
+        composable(StuDest.results.route) {
+            ResultScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(StuDest.ptm.route) {
+            PtmRequestScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
+        composable(StuDest.fee.route) {
+            FeeScreen(
+                onBack = { navController.popBackStack() }
+            )
+        }
 
         composable(StuDest.profile.route) {
             val context = LocalContext.current

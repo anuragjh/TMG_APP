@@ -71,4 +71,19 @@ class UserRepository @Inject constructor(
             Result.failure(e)
         }
     }
+    suspend fun updatePassword(password: String): Result<String> {
+        return try {
+            val response = api.updatePassword(
+                mapOf("password" to password)
+            )
+
+            if (response.isSuccessful) {
+                Result.success("Password updated successfully.")
+            } else {
+                Result.failure(Exception("Error: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }

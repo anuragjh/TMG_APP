@@ -27,9 +27,14 @@ sealed class Destination(open val route: String) {
     data object SETTINGS : BottomNavDestination("more", Icons.Default.MoreHoriz, "More", "Settings screen")
 
     data object START_CLASS : Destination("start_class")
+    data object START_RESULTS : Destination("start_results")
     data object ATTENDANCE_SCREEN : Destination("attendance/{id}") {
         fun createRoute(id: String) = "attendance/$id"
     }
+    data object Results : Destination("result/{id}") {
+        fun createRoute(id: String) = "result/$id"
+    }
+
     data object ENDING_SCREEN : Destination("endclass/{id}") {
         fun createRoute(id: String) = "endclass/$id"
     }
@@ -57,6 +62,12 @@ sealed class Destination(open val route: String) {
             return "chat_room/$className/$canEveryoneMessage"
         }
     }
+
+    data object marks : Destination("marks")
+
+    data object ptm : Destination("ptm")
+
+
 
 
     companion object {

@@ -76,7 +76,7 @@ fun TMGUpdateScreen(
                                 color = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "VERSION ${data.version}  |  ${data.releaseMonth}  |  ANDROID 9+",
+                                text = "VERSION ${data.version}  |  ${data.releaseMonth}  |  ANDROID 5+",
                                 style = MaterialTheme.typography.labelMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
