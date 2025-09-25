@@ -1,6 +1,7 @@
 /*──────────────────────── 3) NAV‑HOST (UI‑only placeholders) ─────────────────────*/
 package com.example.material.pages.students
 
+
 import android.widget.Toast
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -29,6 +30,8 @@ import com.example.material.pages.teacher.Destination
 import com.example.material.viewmodel.AppViewModel
 import kotlinx.coroutines.launch
 import com.example.material.BuildConfig
+import com.example.material.pages.commons.CallAndHistoryScreen
+import com.example.material.pages.teacher.ChatRoomUpdationScreen
 
 @OptIn(ExperimentalAnimationApi::class)
 @Composable
@@ -105,9 +108,31 @@ fun StudentNavHost(
                     navController.navigate(
                         StuDest.chatRoom.withArgs(room.className, room.canEveryoneMessage,room.username)
                     )
+                },
+                onCallClick = {
+                    navController.navigate(StuDest.callroom.route
+                    )
                 }
             )
         }
+        composable(StuDest.callroom.route) {
+            CallAndHistoryScreen(
+                onBack = { navController.popBackStack() },
+//                navController = navController,
+            )
+        }
+        composable(
+            route = Destination.ChatRoomUpdation.route,
+            arguments = listOf(navArgument("className") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val className = backStackEntry.arguments?.getString("className") ?: return@composable
+            ChatRoomUpdationScreen(
+                className = className,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+
         composable(StuDest.security.route) {
             SecurityScreen(
                 onBack = { navController.popBackStack() }

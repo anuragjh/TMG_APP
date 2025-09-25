@@ -5,7 +5,6 @@ import android.net.Uri
 import android.os.Build
 import android.util.Log
 import android.widget.Toast
-import androidx.activity.ComponentActivity
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
 import androidx.compose.animation.core.tween
@@ -14,23 +13,19 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.example.material.BuildConfig
 import com.example.material.datastore.DataStoreManager
 import com.example.material.pages.auth.LoginScreen
+import com.example.material.pages.commons.CallAndHistoryScreen
+import com.example.material.pages.commons.CallingScreen
 import com.example.material.pages.commons.ChatRoomScreen
-import com.example.material.pages.commons.Importance
-import com.example.material.pages.commons.Notice
 import com.example.material.pages.commons.NoticesRoute
-import com.example.material.pages.commons.NoticesScreen
 import com.example.material.pages.commons.ProfileScreen
 import com.example.material.pages.commons.SecurityScreen
 import com.example.material.pages.commons.SettingsScreen
@@ -41,7 +36,6 @@ import com.example.material.pages.students.StudentChatScreen
 import com.example.material.viewmodel.AppViewModel
 import kotlinx.coroutines.launch
 import navigateAndClearBackStack
-import java.time.LocalDate
 
 data class ClassNameResponse(val className: String)
 
@@ -110,11 +104,59 @@ fun TeacherNavHost(navController: NavHostController,
                 onPtmClick = {
                     navController.navigate(Destination.ptm.route)
                 },
-
-
-
+                onChatClick = {
+                    navController.navigate(Destination.chatManagment.route)
+                },
             )
         }
+
+        composable(Destination.chatManagment.route) {
+            val context = LocalContext.current
+            ChatManagmentScreen(
+                onBack = { navController.popBackStack() },
+                onCreateChat = {
+                    navController.navigate(Destination.chatCreate.route)
+                },
+                onUpdateChat = {
+                   navController.navigate(Destination.chatUpdationManagment.route)
+                }
+            )
+        }
+        composable(Destination.chatCreate.route) {
+            ChatRoomCreationScreen(
+                onBack = { navController.popBackStack() },
+            )
+        }
+composable(Destination.chatUpdationManagment.route) {
+    ClassUpdationScreen(
+                onBack = { navController.popBackStack() },
+                navController = navController
+            )
+        }
+
+        composable(
+            route = Destination.ChatRoomUpdation.route,
+            arguments = listOf(navArgument("className") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val className = backStackEntry.arguments?.getString("className") ?: return@composable
+            ChatRoomUpdationScreen(
+                className = className,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable(
+            route = Destination.CallingScreen.route,
+            arguments = listOf(navArgument("username") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val username = backStackEntry.arguments?.getString("username") ?: return@composable
+            CallingScreen(
+                username = username,
+                onEndCall = { navController.popBackStack() }
+            )
+        }
+
+
 
         composable(StuDest.CHATS.route) {
             StudentChatScreen(
@@ -122,9 +164,22 @@ fun TeacherNavHost(navController: NavHostController,
                     navController.navigate(
                         StuDest.chatRoom.withArgs(room.className, room.canEveryoneMessage,room.username)
                     )
+                },
+                onCallClick = {
+                    navController.navigate(StuDest.callroom.route
+            )
                 }
             )
         }
+        composable(StuDest.callroom.route) {
+            CallAndHistoryScreen(
+                onBack = { navController.popBackStack() },
+//navController = navController,
+            )
+        }
+
+
+
         composable(
             route = StuDest.chatRoom.route,
             arguments = listOf(

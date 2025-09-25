@@ -1,6 +1,7 @@
 package com.example.material.api
 
 
+import com.example.material.pages.admin.HealthMetrics
 import com.example.material.pages.commons.ChatMessage
 import com.example.material.pages.commons.Importance
 import com.example.material.pages.teacher.NoteItem
@@ -51,6 +52,13 @@ data class NonUserResponse(
     val username: String,
     val name: String,
     val role: String
+)
+
+data class UserWithPhn(
+    val username: String,
+    val name: String,
+    val role: String,
+    val phone: String
 )
 
 data class AddUserRequest(
@@ -246,6 +254,13 @@ data class PTMRequester(
     var attendeName: String
 )
 
+data class ChatRoomCreateRequest(
+    val className: String,
+    val students: List<String>,
+    val teachers: List<String>,
+    val canEveryoneMessage: Boolean
+)
+
 
 interface ApiService {
 
@@ -430,5 +445,38 @@ interface ApiService {
 
     @GET("/api/ptm/by-attendee")
     suspend fun getPtmRequestersByAttendee(): List<PTMRequester>
+
+    @GET("api/getAllTeachersAndStudent")
+    suspend fun getAllTeachersAndStudents(): List<NonUserResponse>
+
+    @POST("/api/chatroom/create")
+    suspend fun createChatRoom(@Body request: ChatRoomCreateRequest): Response<ResponseBody>
+
+    @GET("api/chatroom/mycreated")
+    suspend fun getMyCreatedChatRooms(): Response<ResponseBody>
+
+
+    @HTTP(method = "DELETE", path = "/api/chatroom/{className}", hasBody = true)
+    suspend fun deleteClassChat(
+        @Path("className") className: String,)
+    : Response<ResponseBody>
+
+    @GET("api/chatroom/{className}/users")
+    suspend fun allChatUsers(
+        @Path("className") className: String
+    ):Response<ResponseBody>
+
+    @PUT("api/chatroom/{className}/update")
+    suspend fun updateChatRoom(
+        @Path("className") className: String,
+        @Body request: ChatRoomCreateRequest
+    ): Response<ResponseBody>
+
+
+    @GET("api/getAllTeachersAndStudentwithphn")
+    suspend fun getAllTeachersAndStudentswPhn(): Response<ResponseBody>
+
+    @GET("api/health/metrics")
+    suspend fun getHealthMetrics(): HealthMetrics
 }
 

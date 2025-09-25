@@ -59,6 +59,8 @@ sealed class StuDest(open val route: String) {
             }
         }
 
+    data object callroom : StuDest("call")
+
 
     companion object {
         val bottomNavItems = listOf(HOME, NOTES, CHATS, SETTINGS)

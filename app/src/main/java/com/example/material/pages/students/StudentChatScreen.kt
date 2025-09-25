@@ -8,13 +8,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Call
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -23,24 +22,35 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.material.R
 import com.example.material.api.ChatRoomResponse
+import com.example.material.datastore.DataStoreManager
 import com.example.material.viewmodel.chat.ChatViewModel
 import com.google.accompanist.swiperefresh.*
 import java.time.OffsetDateTime
 import java.time.format.DateTimeFormatter
 
 data class ChatPreview(
-    val sender: String,
+    val className: String,      // group/class name
     val message: String,
     val date: String,
-    val initials: String
+    val initials: String,
+    val lastSender: String?     // who sent the last message
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun StudentChatScreen(
     viewModel: ChatViewModel = hiltViewModel(),
-    onChatClick: (ChatRoomResponse) -> Unit = {}
+    onChatClick: (ChatRoomResponse) -> Unit = {},
+    onCallClick: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val dataStoreManager = remember { DataStoreManager(context) }
+
+    var role by remember { mutableStateOf<String?>(null) }
+    LaunchedEffect(Unit) {
+        role = dataStoreManager.getRole()
+    }
+
     val chatRooms by viewModel.chatRooms.collectAsState()
     val loading by viewModel.loading.collectAsState()
 
@@ -59,12 +69,14 @@ fun StudentChatScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = { /* TODO: Profile click */ }) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Profile",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
+                    if (role == "TEACHER") {
+                        IconButton(onClick = { onCallClick() }) {
+                            Icon(
+                                imageVector = Icons.Default.Call,
+                                contentDescription = "Call",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -82,7 +94,6 @@ fun StudentChatScreen(
         ) {
             when {
                 loading && chatRooms.isEmpty() -> {
-                    // Show loading indicator when first loading
                     Box(
                         modifier = Modifier.fillMaxSize(),
                         contentAlignment = Alignment.Center
@@ -90,9 +101,7 @@ fun StudentChatScreen(
                         CircularProgressIndicator()
                     }
                 }
-
                 chatRooms.isEmpty() -> {
-                    // No chatrooms
                     Column(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.Center,
@@ -108,7 +117,6 @@ fun StudentChatScreen(
                         Text("Not added in any group yet")
                     }
                 }
-
                 else -> {
                     LazyColumn {
                         items(chatRooms) { room ->
@@ -124,8 +132,15 @@ fun StudentChatScreen(
     }
 }
 
+
 @Composable
 private fun ChatRow(chat: ChatPreview, onClick: () -> Unit = {}) {
+    // If last sender is chiranjit → show TMG OFFICIAL in preview
+    val senderLabel = when (chat.lastSender) {
+        "chiranjit@tmg.teacher", "chiranjit" -> "TMG OFFICIAL"
+        else -> chat.lastSender ?: "Unknown"
+    }
+
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -150,12 +165,14 @@ private fun ChatRow(chat: ChatPreview, onClick: () -> Unit = {}) {
         Spacer(modifier = Modifier.width(16.dp))
 
         Column(modifier = Modifier.weight(1f)) {
+            // Group Name
             Text(
-                text = chat.sender,
+                text = chat.className,
                 style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.SemiBold)
             )
+            // Last message preview
             Text(
-                text = chat.message,
+                text = "$senderLabel: ${chat.message}",
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
@@ -184,10 +201,12 @@ private fun ChatRoomResponse.toChatPreview(): ChatPreview {
             "Unknown"
         }
     } ?: "No date"
+
     return ChatPreview(
-        sender = className,
-        message = "$senderName: $message",
+        className = className,
+        message = message,
         date = timestamp,
-        initials = initials.uppercase()
+        initials = initials.uppercase(),
+        lastSender = senderName
     )
 }

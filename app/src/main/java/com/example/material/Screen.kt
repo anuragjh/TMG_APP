@@ -38,6 +38,7 @@ import com.example.material.pages.admin.CLASS.ClassesManagmentScreen
 import com.example.material.pages.admin.CLASS.RemoveUsersScreen
 import com.example.material.pages.admin.CLASS.StudentSelectionScreen
 import com.example.material.pages.admin.CLASS.TeacherSelectionScreen
+import com.example.material.pages.admin.HealthScreen
 import com.example.material.pages.admin.USERS.CreateUserScreen
 import com.example.material.pages.admin.USERS.UserDetailsScreen
 import com.example.material.pages.admin.USERS.UserUpdationScreen
@@ -61,6 +62,7 @@ import com.example.material.viewmodel.ClassFormViewModel
 import kotlinx.coroutines.launch
 
 sealed class Screen(val route: String) {
+    object health : Screen("health")
     object Login : Screen("login")
     object ForgotPassword : Screen("forgot_password")
     object StudentHome : Screen("student_home")
@@ -227,9 +229,22 @@ fun AppNavGraph(startDestination: String = Screen.Login.route) {
                },
                 onSettingClick = {
                    navController.navigate(Screen.SETTINGS.route)
+                },
+                        onServerHealth = {
+                    navController.navigate(Screen.health.route)
                 }
             )
         }
+        composable(
+            Screen.health.route,
+            enterTransition = { defaultEnterTransition() },
+            exitTransition = { defaultExitTransition() },
+            popEnterTransition = { defaultPopEnterTransition() },
+            popExitTransition = { defaultPopExitTransition() }
+        ) {
+           HealthScreen(onBack = { navController.popBackStack() })
+        }
+
         composable(Screen.SETTINGS.route) {
 
             SettingsScreen(

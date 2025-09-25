@@ -57,6 +57,7 @@ fun TeacherHomeContent(
     onUpdateCheckClick: () -> Unit = {},
     onLogoutClick: () -> Unit = {},
     onMarksClick: () -> Unit = {},
+    onChatClick: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsState()
     var username by remember { mutableStateOf("") }
@@ -180,6 +181,17 @@ fun TeacherHomeContent(
                     onClick = {
                         scope.launch { drawerState.close() }
                         onMarksClick()
+                    },
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                    shape = RoundedCornerShape(12.dp)
+                )
+                NavigationDrawerItem(
+                    label = { Text("Chat") },
+                    icon = { Icon(Icons.Default.Chat, contentDescription = "ChatRoom") },
+                    selected = false,
+                    onClick = {
+                        scope.launch { drawerState.close() }
+                        onChatClick()
                     },
                     modifier = Modifier.padding(horizontal = 12.dp),
                     shape = RoundedCornerShape(12.dp)

@@ -39,11 +39,22 @@ sealed class Destination(open val route: String) {
         fun createRoute(id: String) = "endclass/$id"
     }
 
+    data object ChatRoomUpdation : Destination("chat_room_updation/{className}") {
+        fun withArgs(className: String): String {
+            return "chat_room_updation/$className"
+        }
+    }
+
+    data object CallingScreen: Destination("calling/{username}") {
+        fun withArgs(username: String): String {
+            return "calling/$username"
+        }
+    }
+
     data class StaticPageArgs(val heading: String, val content: String)
 
     data object static_pages : Destination("static_pages/{heading}/{content}") {
         fun createRoute(heading: String, content: String): String {
-            // Encode strings to avoid crash due to slashes, spaces, etc.
             return "static_pages/${Uri.encode(heading)}/${Uri.encode(content)}"
         }
     }
@@ -62,6 +73,11 @@ sealed class Destination(open val route: String) {
             return "chat_room/$className/$canEveryoneMessage"
         }
     }
+
+    data object chatCreate : Destination("chat_create")
+    data object chatUpdationManagment : Destination("chat_updation") {
+    }
+    data object chatManagment : Destination("chat_management")
 
     data object marks : Destination("marks")
 
